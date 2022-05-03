@@ -6,24 +6,21 @@ from dataset import NormalClosure
 
 
 class NormalClosureModel(nn.Module):
-    def __init__(self, generators_number=2, max_length=10):
+    def __init__(self, kernel_size=3, conv_channels=1, 
+                 hidden_size=4, generators_number=2, max_length=10):
         super().__init__()
-        self.conv = nn.Conv1d(in_channels=generators_number, out_channels=256, kernel_size=3).to(torch.double)
-        self.bn = nn.BatchNorm1d(256 * (max_length - 3 + 1)).to(torch.double)
-        self.linear1 = nn.Linear(256 * (max_length - 3 + 1), 64).to(torch.double)
+        self.conv = nn.Conv1d(in_channels=generators_number, out_channels=conv_channels, kernel_size=kernel_size).to(torch.double)
+        self.linear1 = nn.Linear(conv_channels * (max_length - kernel_size + 1), hidden_size).to(torch.double)
         self.relu1 = nn.ReLU().to(torch.double)
-        self.linear2 = nn.Linear(64, 32).to(torch.double)
-        self.linear3 = nn.Linear(32, 1).to(torch.double)
+        self.linear2 = nn.Linear(hidden_size, 1).to(torch.double)
         self.sigmoid = nn.Sigmoid().to(torch.double)
     
     def forward(self, word):
         out = self.conv(word)
         out = out.reshape(out.shape[0], -1)
-        # out = self.bn(out)
         out = self.linear1(out)
         out = self.relu1(out)
         out = self.linear2(out)
-        out = self.linear3(out)
         return self.sigmoid(out)
 
 
