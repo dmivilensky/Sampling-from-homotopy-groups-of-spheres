@@ -6,15 +6,24 @@ from dataset import NormalClosure
 
 
 class NormalClosureModel(nn.Module):
-    def __init__(self, kernels=[3], generators_number=2, max_length=10):
+    def __init__(self, generators_number=2, max_length=10):
         super().__init__()
-        self.conv = nn.Conv1d(in_channels=generators_number, out_channels=1, kernel_size=kernels[0]).to(torch.double)
-        self.linear = nn.Linear(max_length - kernels[0] + 1, 1).to(torch.double)
+        self.conv = nn.Conv1d(in_channels=generators_number, out_channels=256, kernel_size=3).to(torch.double)
+        self.bn = nn.BatchNorm1d(256 * (max_length - 3 + 1)).to(torch.double)
+        self.linear1 = nn.Linear(256 * (max_length - 3 + 1), 64).to(torch.double)
+        self.relu1 = nn.ReLU().to(torch.double)
+        self.linear2 = nn.Linear(64, 32).to(torch.double)
+        self.linear3 = nn.Linear(32, 1).to(torch.double)
         self.sigmoid = nn.Sigmoid().to(torch.double)
     
     def forward(self, word):
-        out = self.conv(word).squeeze(1)
-        out = self.linear(out)
+        out = self.conv(word)
+        out = out.reshape(out.shape[0], -1)
+        # out = self.bn(out)
+        out = self.linear1(out)
+        out = self.relu1(out)
+        out = self.linear2(out)
+        out = self.linear3(out)
         return self.sigmoid(out)
 
 
@@ -23,7 +32,7 @@ if __name__ == "__main__":
     max_length = 10
     dataset_length = 1000
     batch = 100
-    epochs = 10
+    epochs = 50
 
     dataset = NormalClosure([[1]], dataset_length, generators_number=generators_number, max_length=max_length)
     dataloader = DataLoader(dataset, batch_size=batch, shuffle=True)
