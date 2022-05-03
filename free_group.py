@@ -39,26 +39,6 @@ def conjugation(word, conjugator):
     return inverted_conjugator[:(-i if i != 0 else len(inverted_conjugator)+1)] + word[i:(-j if j != 0 else len(word)+1)] + conjugator[j:]
 
 
-def normal_closure(subgroup, generators_number=2, max_length=5):
-    while True:
-        length = random_length(max_length)
-        word = []
-
-        while len(word) < length:
-            factor = random.sample(subgroup, 1)[0]
-            if random.random() > 0.5:
-                factor = reciprocal(factor)
-
-            conjugator = next(free_group_bounded(
-                generators_number=generators_number, 
-                max_length=(length - len(word) - len(factor)) // 2
-            ))
-            word += conjugation(factor, conjugator)
-            word = normalize(word)
-
-        yield word
-
-
 def normalize(word):
     normalized = []
 
@@ -77,6 +57,30 @@ def normalize(word):
     return normalized
 
 
+def normal_closure(subgroup, generators_number=2, max_length=5):
+    while True:
+        length = random_length(max_length)
+        word = []
+
+        while True:
+            factor = random.sample(subgroup, 1)[0]
+            # TODO: ask about power
+            if random.random() > 0.5:
+                factor = reciprocal(factor)
+
+            conjugator = next(free_group_bounded(
+                generators_number=generators_number, 
+                max_length=(length - len(word) - len(factor)) // 2
+            ))
+            new_word = word + conjugation(factor, conjugator)
+            new_word = normalize(new_word)
+            if len(new_word) > max_length:
+                break
+            word = new_word
+
+        yield word
+
+
 def is_cyclic_permutation(a, b):
     if len(a) != len(b):
         return False
@@ -88,8 +92,12 @@ def is_cyclic_permutation(a, b):
     return False
 
 
-def is_from_normal_closure(generator, word):
+def is_from_singleton_normal_closure(generators, word):
+    if len(generators) != 1:
+        raise NotImplementedError('`generators` must contain only one generator ;)')
+
     contained_smth_to_reduce = True
+    generator = generators[0]
     generator_len = len(generator)
 
     while contained_smth_to_reduce:
