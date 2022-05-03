@@ -59,7 +59,7 @@ if __name__ == "__main__":
         print('f1', round(f1_score(y_true, y_pred), 4), end=' ')
         print()
 
-print()
-print('TN', 'FP')
-print('FN', 'TP')
-print(confusion_matrix(y_true, y_pred))
+    print()
+    print('TN', 'FP')
+    print('FN', 'TP')
+    print(confusion_matrix(y_true, y_pred))

@@ -1,3 +1,4 @@
+import time
 from free_group import normal_closure, free_group_bounded, is_from_singleton_normal_closure, print_word
 
 
@@ -28,6 +29,12 @@ class TrivialSampler:
 
 
 if __name__ == "__main__":
-    sampler = TrivialSampler(baseline="joint", max_length=6)
-    for i in range(10):
+    word = [-2, 3, 2, -3, -2, -1, -2, 1, 2, 2, 1, 1, 1, -2, -2, -1, 2, 1, 2, 3, -2, -3, 2, -1, -1, -1, 3, -1, -2, -1, 3, 3, 1, 2, 1, -3, -3, 1, 1, 1, -2, 3, 2, -3, -2, -1, -2, 1, 2, 2, -1, -1, -1, -2, -2, -1, 2, 1, 2, 3, -2, -3, 2, 3, 3, -1, -2, -1, -3, -3, 1, 2, 1, -3]
+    print(len(word))
+    print(is_from_singleton_normal_closure([[1]], word), is_from_singleton_normal_closure([[2]], word), is_from_singleton_normal_closure([[3]], word), is_from_singleton_normal_closure([[1, 2, 3]], word))
+
+    sampler = TrivialSampler(baseline="joint", generators_number=3, max_length=100)
+    for i in range(1):
+        start = time.time()
         print_word(next(sampler))
+        print(time.time() - start, 's')
