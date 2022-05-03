@@ -1,4 +1,4 @@
-from free_group import normal_closure, free_group_bounded, is_from_singleton_normal_closure
+from free_group import normal_closure, free_group_bounded, is_from_singleton_normal_closure, print_word
 
 
 class TrivialSampler:
@@ -25,3 +25,9 @@ class TrivialSampler:
 
     def __next__(self):
         return next(self.intersection)
+
+
+if __name__ == "__main__":
+    sampler = TrivialSampler(baseline="joint", max_length=6)
+    for i in range(10):
+        print_word(next(sampler))
