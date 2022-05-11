@@ -6,6 +6,12 @@ def random_length(radius):
     # https://arxiv.org/pdf/1805.08207.pdf 6.3 Uniform sampling in hyperbolic space
     return max(1, int(round(math.acosh(1 + random.random() * (math.cosh(radius) - 1)))))
 
+# def random_length(radius):
+#     return max(1, int(round(math.asinh(random.random() * math.cosh(radius - 1)))))
+
+# def random_length(radius):
+#     return max(1, int(round(random.random() * radius)))
+
 
 def free_group_bounded(generators_number=2, max_length=5):
     generators = set(range(1, generators_number + 1)) | set(range(-generators_number, 0))
@@ -64,7 +70,6 @@ def normal_closure(subgroup, generators_number=2, max_length=5):
 
         while True:
             factor = random.sample(subgroup, 1)[0]
-            # TODO: ask about power
             if random.random() > 0.5:
                 factor = reciprocal(factor)
 
@@ -81,13 +86,10 @@ def normal_closure(subgroup, generators_number=2, max_length=5):
         yield word
 
 
-def is_cyclic_permutation(a, b):
-    if len(a) != len(b):
-        return False
-
-    double_b = b * 2
-    for i in range(2 * len(b)):
-        if double_b[i] == a[0] and double_b[i:i + len(a)] == a:
+def occurs(a, b):
+    len_a = len(a)
+    for i in range(len(b) - len_a):
+        if b[i] == a[0] and b[i:i + len_a] == a:
             return True
     return False
 
@@ -100,6 +102,9 @@ def is_from_singleton_normal_closure(generators, word):
     generator = generators[0]
     generator_len = len(generator)
 
+    doubled_generator  = generator * 2
+    doubled_reciprocal = reciprocal(generator) * 2
+
     while contained_smth_to_reduce:
         contained_smth_to_reduce = False
         new_word = []
@@ -107,7 +112,7 @@ def is_from_singleton_normal_closure(generators, word):
         i = 0
         while i <= len(word) - generator_len:
             subword = word[i:i + generator_len]
-            if is_cyclic_permutation(subword, generator) or is_cyclic_permutation(subword, reciprocal(generator)):
+            if occurs(subword, doubled_generator) or occurs(subword, doubled_reciprocal):
                 contained_smth_to_reduce = True
                 i += generator_len
             else:
@@ -121,11 +126,27 @@ def is_from_singleton_normal_closure(generators, word):
     return len(word) == 0
 
 
+LETTERS = "xyzpqrstuvwklmn"
+
+
 def print_word(word):
-    letters = "xyzpqrstuvwklmn"
-    print("".join(map(lambda factor: letters[abs(factor) - 1] + ("⁻¹" if factor < 0 else ""), word)))
+    print("".join(map(lambda factor: LETTERS[abs(factor) - 1] + ("⁻¹" if factor < 0 else ""), word)))
 
 
 def print_words(words):
     for word in words:
         print_word(word)
+
+
+def parse_word(string, order=None):
+    letters = LETTERS[:order]
+    i = 0
+    word = []
+    while i < len(string):
+        if string[i] != "⁻":
+            word.append(letters.index(string[i]) + 1)
+            i += 1
+        else:
+            word[-1] = -word[-1]
+            i += 2
+    return word

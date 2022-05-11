@@ -33,7 +33,7 @@ if __name__ == "__main__":
     print(len(word))
     print(is_from_singleton_normal_closure([[1]], word), is_from_singleton_normal_closure([[2]], word), is_from_singleton_normal_closure([[3]], word), is_from_singleton_normal_closure([[1, 2, 3]], word))
 
-    sampler = TrivialSampler(baseline="joint", generators_number=3, max_length=100)
+    sampler = TrivialSampler(baseline="joint", generators_number=3, max_length=25)
     for i in range(1):
         start = time.time()
         print_word(next(sampler))
