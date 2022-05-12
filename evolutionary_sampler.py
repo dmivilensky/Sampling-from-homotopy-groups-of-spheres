@@ -51,11 +51,11 @@ def better_base(singleton_generators, joint_generator, word, previous_function):
     return True
 
 
-def function_base(singleton_generators, joint_generator, word):
+def dist_base(singleton_generators, joint_generator, word):
     return distance_to_singleton_normal_closure(word, joint_generator) + sum(distance_to_singleton_normal_closure(word, gen) for gen in singleton_generators)
 
 
-def optimize(initial_word, function, better, p=0.1, generators_number=2, max_length=10, max_iters=10):
+def optimize(word, dist, better, p=0.1, generators_number=2, max_length=10, max_iters=10):
     # https://arxiv.org/pdf/1703.03334.pdf 3.2 (1 + 1) EA
     # https://arxiv.org/pdf/1812.11061.pdf 2.2 (\mu + \lambda) EA
 
@@ -66,9 +66,8 @@ def optimize(initial_word, function, better, p=0.1, generators_number=2, max_len
             if random.random() < p:
                 mutated_word[i] = random.sample(generators - set([mutated_word[i]]), 1)[0]
         return mutated_word
-    
-    word = initial_word.copy()
-    current_function = function(word)
+
+    current_function = dist(word)
 
     for _ in range(max_iters):
         new_word = mutate(word)
@@ -79,11 +78,10 @@ def optimize(initial_word, function, better, p=0.1, generators_number=2, max_len
 
         if better(normalized, current_function):
             word = new_word.copy()
-            current_function = function(normalized)
+            current_function = dist(normalized)
             if current_function == 0:
                 break
-    # print()
-    # print(current_function, function(normalize(word)))
+
     return normalize(word), current_function == 0
 
 
@@ -112,7 +110,7 @@ class EvolutionarySampler:
         else:
             raise NotImplementedError('unknown `baseline`')
 
-        self.function = partial(function_base, singleton_generators, joint_generator)
+        self.dist = partial(dist_base, singleton_generators, joint_generator)
         self.better = partial(better_base, singleton_generators, joint_generator)
         self.condition = lambda word: all(is_from_singleton_normal_closure(gen, word) for gen in singleton_generators) and is_from_singleton_normal_closure(joint_generator, word)
 
@@ -122,26 +120,27 @@ class EvolutionarySampler:
     def __next__(self):
         success = False
         while not success:
-            initial_word = next(self.baseline_group)
-            if self.condition(initial_word):
-                return resulting
+            word = next(self.baseline_group)
+            if self.condition(word):
+                return word
             if random.random() > self.exploration_rate:
                 continue
-            resulting, success = optimize(
-                initial_word, self.function, self.better,
+            word, success = optimize(
+                word, self.dist, self.better,
                 generators_number=self.generators_number, 
                 max_length=self.max_length,
                 p=self.mutation_rate, max_iters=self.max_iters)
-        return resulting
+        print('evolution succeed')
+        return word
 
 
 if __name__ == "__main__":
-    word = parse_word("zzy⁻¹x⁻¹yy⁻¹xyz⁻¹z⁻¹y⁻¹z⁻¹xx⁻¹zyz⁻¹yy⁻¹zx⁻¹xz⁻¹zz⁻¹")
+    word = parse_word("x⁻¹z⁻¹y⁻¹zyxy⁻¹x⁻¹z⁻¹yzy⁻¹xy")
     print(len(word))
     print(is_from_singleton_normal_closure([[1]], word), is_from_singleton_normal_closure([[2]], word), is_from_singleton_normal_closure([[3]], word), is_from_singleton_normal_closure([[1, 2, 3]], word))
-    print(function_base([[[1]], [[2]], [[3]]], [[1, 2, 3]], word))
+    print(dist_base([[[1]], [[2]], [[3]]], [[1, 2, 3]], word))
 
-    sampler = EvolutionarySampler(baseline="joint", generators_number=3, max_length=25, max_iters=50, mutation_rate=0.1, exploration_rate=0.01)
+    sampler = EvolutionarySampler(baseline="joint", generators_number=3, max_length=25, max_iters=50, mutation_rate=0.1, exploration_rate=1.)
     for i in range(1):
         start = time.time()
         print_word(next(sampler))
