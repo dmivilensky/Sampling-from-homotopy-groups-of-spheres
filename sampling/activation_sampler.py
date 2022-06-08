@@ -2,7 +2,9 @@ import torch
 from torch import nn
 from sklearn.metrics import f1_score, confusion_matrix
 from torch.utils.data import DataLoader
-from dataset import NormalClosure
+from sampling.torch_group_datasets import NormalClosure
+import os
+import pickle
 
 
 class NormalClosureModel(nn.Module):
@@ -25,19 +27,29 @@ class NormalClosureModel(nn.Module):
 
 
 if __name__ == "__main__":
-    generators_number = 2
-    max_length = 10
+    generators_number = 3
+    max_length = 24
     dataset_length = 1000
     batch = 100
     epochs = 50
 
-    dataset = NormalClosure([[1]], dataset_length, generators_number=generators_number, max_length=max_length)
+    dataset_file = f'dataset_gen={generators_number}.pkl'
+    if os.path.isfile(dataset_file):
+        with open(dataset_file, 'rb') as f:
+            dataset = pickle.load(f)
+    else:
+        dataset = NormalClosure([[1]], dataset_length, generators_number=generators_number, max_length=max_length)
+        with open(dataset_file, 'wb') as f:
+            pickle.dump(dataset, f)
+
     dataloader = DataLoader(dataset, batch_size=batch, shuffle=True)
     eval_dataloader = DataLoader(dataset, batch_size=dataset_length)
 
-    model = NormalClosureModel()
+    model = NormalClosureModel(
+        kernel_size=3, conv_channels=1, hidden_size=4, 
+        generators_number=generators_number, max_length=max_length)
     criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-1)
 
     for _ in range(epochs):
         model.train()
