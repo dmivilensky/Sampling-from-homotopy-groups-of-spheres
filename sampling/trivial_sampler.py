@@ -1,5 +1,6 @@
 import time
 from group_tool.reduced_words import *
+from group_tool import print_word
 
 
 class TrivialSampler:

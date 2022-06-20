@@ -4,7 +4,7 @@ import warnings
 from functools import partial
 
 from group_tool.reduced_words import *
-from group_tool.commutator_collecting import *
+from group_tool import print_word, parse_word
 
 
 def distance_to_singleton_normal_closure(word, generators, approximation="reduction"):
@@ -142,9 +142,6 @@ class EvolutionarySampler:
         elif baseline == "singleton":
             self.baseline_group = normal_closure(singleton_generators[0], 
             generators_number=generators_number, max_length=max_length)
-        elif baseline == "commutator_collecting":
-            self.baseline_group = commutator_collecting(
-                generators_number=generators_number, max_length=max_length)
         else:
             raise NotImplementedError('unknown `baseline`')
 

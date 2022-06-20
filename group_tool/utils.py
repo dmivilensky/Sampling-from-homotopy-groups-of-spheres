@@ -15,13 +15,22 @@ def random_length(radius, method="uniform"):
 LETTERS = "xyzpqrstuvwklmn"
 
 
-def print_word(word):
-    print("".join(map(lambda factor: LETTERS[abs(factor) - 1] + ("⁻¹" if factor < 0 else ""), word)))
+def print_word(word, verbose=True):
+    result = []
+    for factor in word:
+        if type(factor) is list:
+            result.append("[" + ",".join(print_word(factor, verbose=False)) + "]")
+        else:
+            result.append(LETTERS[abs(factor) - 1] + ("⁻¹" if factor < 0 else ""))
+    
+    if verbose:
+        print("".join(result))
+    return result
 
 
-def print_words(words):
+def print_words(words, verbose=True):
     for word in words:
-        print_word(word)
+        yield print_word(word, verbose)
 
 
 def parse_word(string, order=None):
