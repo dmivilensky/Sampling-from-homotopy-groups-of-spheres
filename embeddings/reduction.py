@@ -1,9 +1,10 @@
 from autograd import numpy as np
 from autograd import grad, jacobian
 from functools import partial
-from group_tool.reduced_words import free_group_bounded, is_from_singleton_normal_closure
+from group_tool.reduced_words import free_group_bounded, is_from_singleton_normal_closure, normalize
+from group_tool.utils import print_word
 
-dt = np.int32
+dt = np.float64
 
 Sanov_x = np.array(
     [[1, 2],
@@ -82,46 +83,80 @@ def distance_from_normal_closure(generators_number, generator, oh_word):
         right = np.zeros(shape=(l,l))
         right[s][0] = 1
         embedding = np.matmul(zero_first_row, embedding) + np.matmul(first_row, (np.matmul(np.matmul(np.matmul(np.matmul(left, embedding), Bl0), embedding.T), right)).T)
-        # embedding = np.matmul(zero_first_row, embedding) + np.matmul(first_row, np.matmul(np.matmul(np.matmul(right.T, np.matmul(embedding, Bl0.swapaxes(1, 2))), embedding.T), left.T).transpose(1, 2, 0))
         
     embedding = np.matmul(first_row, embedding) - np.array([1, 0, 0, 1])
     return np.linalg.norm(embedding)**2
 
-n = 3
-l = 10
+def distance_from_zero(generators_number, oh_word):
+    l = oh_word.shape[0]
+
+    embedding = np.matmul(oh_word, np.vstack([np.eye(2).flatten()] + [generators_embedding(i).flatten() for i in range(1, generators_number+1)] + [np.linalg.inv(generators_embedding(i)).flatten() for i in range(1, generators_number+1)]))
+
+    zero_first_row = np.eye(l)
+    zero_first_row[0] *= 0
+    first_row = np.zeros(l)
+    first_row[0] = 1
+    left = np.zeros(shape=(l,l))
+    left[0][0] = 1
+
+    for s in range(1, l):
+        right = np.zeros(shape=(l,l))
+        right[s][0] = 1
+        embedding = np.matmul(zero_first_row, embedding) + np.matmul(first_row, (np.matmul(np.matmul(np.matmul(np.matmul(left, embedding), Bl0), embedding.T), right)).T)
+    
+    embedding = np.matmul(first_row, embedding) - np.array([1, 0, 0, 1])
+    return np.linalg.norm(embedding)**2
+
+n = 2
+l = 35
 
 gen = free_group_bounded(generators_number=n, max_length=l)
-f_pure = lambda oh_word: sum(partial(distance_from_normal_closure, n, [i])(oh_word) for i in range(1, n+1)) / n
+def f_pure(x): 
+    oh_word = softmax(x.reshape(l, 2*n+1))
+    # oh_word = one_hot(n, np.argmax(x.reshape(l, 2*n+1), axis=1))
+    return sum(partial(distance_from_normal_closure, n, [i])(oh_word) for i in range(1, n+1)) / n
 
-penalty = lambda oh_word: np.linalg.norm(oh_word[:, 0])**2 + 1e+1/np.std(np.sum(softmax(x.reshape(l, 2*n+1)) * np.vstack([np.linspace(1, 2*n+1, 2*n+1)]*l), axis=1))
-
-f = lambda oh_word: f_pure(oh_word) + penalty(oh_word)
-
-# for _ in range(100):
-#     word = next(gen)
-#     oh_word = one_hot(n, word)
-#     print("in fact:", is_from_singleton_normal_closure([[1]], word), "we say:", f(oh_word) <= 1e-10)
-
-def softmax(x, beta=10):
+def softmax(x, beta=500):
     e_x = np.exp(beta * (x - np.matmul(np.expand_dims(np.max(x, axis=1), 1), np.ones(shape=(1, x.shape[1])))))
     return e_x / np.matmul(np.expand_dims(np.sum(e_x, axis=1), 1), np.ones(shape=(1, x.shape[1])))
 
-f_flat_pure = lambda x: f_pure(softmax(x.reshape(l, 2*n+1)))
-f_flat = lambda x: f(softmax(x.reshape(l, 2*n+1)))
+def penalty(x):
+    oh_word = softmax(x.reshape(l, 2*n+1))
+    # oh_word = one_hot(n, np.argmax(x.reshape(l, 2*n+1), axis=1))
+    return 1/distance_from_zero(n, oh_word)
 
-df = lambda x: grad(f_flat)(x)
-d2f = lambda x: jacobian(grad(f_flat))(x)
-
-def pad(word, length):
+def pad(word, l):
     return word + [0] * (l - len(word))
 
-x = one_hot(n, pad(next(gen), l)).flatten()
+for probe in range(100):
+    # x = one_hot(n, pad(next(gen), l)).flatten()
+    x = np.random.random(l*(2*n+1))
+    # print('tic')
 
-for t in range(100):
-    # x = x - np.linalg.inv(d2f(x) + lambd * np.eye(x.shape[0])) @ df(x)
-    g = df(x)
-    x = x - (g / np.linalg.norm(g)) / np.sqrt(t+1)
-    print(f_flat_pure(x))
-    word = np.argmax(softmax(x.reshape(l, 2*n+1)), axis=1)
-    word[word >= n+1] = n - word[word >= n+1]
-    print(word)
+    for t in range(100):
+        g = grad(f_pure)(x)
+        gp = grad(penalty)(x)
+        # x = x - g * f_flat(x) / (1e-2 * np.linalg.norm(g)**2)
+        x = x - (g + gp) / max(np.linalg.norm(g + gp), 1e-80)
+        word = np.argmax(softmax(x.reshape(l, 2*n+1)), axis=1)
+        word[word >= n+1] = n - word[word >= n+1]
+        # if t % 50 == 0:
+            # print("%.2e %.2e %.2e" % (f_pure(x), penalty(softmax(x.reshape(l, 2*n+1))), np.linalg.norm(g + gp)))
+            # print("-", end=" ")
+            # print("-")
+            # print_word(word)
+        if np.linalg.norm(g + gp) < 1e-80 and f_pure(x) > 1:
+            # print("%.2e %.2e %.2e" % (f_pure(x), penalty(softmax(x.reshape(l, 2*n+1))), np.linalg.norm(g + gp)))
+            # print("+", end=" ")
+            # print("+")
+            # print_word(word)
+            break
+        if all(is_from_singleton_normal_closure([[i]], word) for i in range(1, n+1)):
+            if len(normalize(word)) > 0:
+                # print("%.2e %.2e %.2e" % (f_pure(x), penalty(softmax(x.reshape(l, 2*n+1))), np.linalg.norm(g + gp)))
+                print_word(normalize(word))
+                break
+            else:
+                pass
+                # print("?", end=" ")
+                # print_word(word)
