@@ -1,5 +1,5 @@
 from autograd import numpy as np
-from autograd import grad, jacobian
+from autograd import grad
 from functools import partial
 from group_tool.reduced_words import free_group_bounded, is_from_singleton_normal_closure, normalize
 from group_tool.utils import print_word
