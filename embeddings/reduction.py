@@ -1,3 +1,4 @@
+import time
 from autograd import numpy as np
 from autograd import grad
 from functools import partial
@@ -107,14 +108,16 @@ def distance_from_zero(generators_number, oh_word):
     embedding = np.matmul(first_row, embedding) - np.array([1, 0, 0, 1])
     return np.linalg.norm(embedding)**2
 
-n = 2
-l = 35
+n = 5
+l = 50
+first = 1
+probes = 400
 
 gen = free_group_bounded(generators_number=n, max_length=l)
 def f_pure(x): 
     oh_word = softmax(x.reshape(l, 2*n+1))
     # oh_word = one_hot(n, np.argmax(x.reshape(l, 2*n+1), axis=1))
-    return sum(partial(distance_from_normal_closure, n, [i])(oh_word) for i in range(1, n+1)) / n
+    return sum(partial(distance_from_normal_closure, n, [i])(oh_word) for i in range(1, min(first, n)+1)) / min(first, n)
 
 def softmax(x, beta=500):
     e_x = np.exp(beta * (x - np.matmul(np.expand_dims(np.max(x, axis=1), 1), np.ones(shape=(1, x.shape[1])))))
@@ -128,12 +131,15 @@ def penalty(x):
 def pad(word, l):
     return word + [0] * (l - len(word))
 
-for probe in range(100):
+count = 0
+start = time.time()
+
+for probe in range(probes):
     # x = one_hot(n, pad(next(gen), l)).flatten()
     x = np.random.random(l*(2*n+1))
     # print('tic')
 
-    for t in range(100):
+    for t in range(400):
         g = grad(f_pure)(x)
         gp = grad(penalty)(x)
         # x = x - g * f_flat(x) / (1e-2 * np.linalg.norm(g)**2)
@@ -151,9 +157,11 @@ for probe in range(100):
             # print("+")
             # print_word(word)
             break
-        if all(is_from_singleton_normal_closure([[i]], word) for i in range(1, n+1)):
+        if all(is_from_singleton_normal_closure([[i]], word) for i in range(1, min(first, n)+1)):
             if len(normalize(word)) > 0:
                 # print("%.2e %.2e %.2e" % (f_pure(x), penalty(softmax(x.reshape(l, 2*n+1))), np.linalg.norm(g + gp)))
+                count += 1
+                print(count, '--', time.time() - start, 's', '--', end=' ')
                 print_word(normalize(word))
                 break
             else:
