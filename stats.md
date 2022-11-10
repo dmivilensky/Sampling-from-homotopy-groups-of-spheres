@@ -224,11 +224,7 @@ $n$ — число образующих, $l$ — максимальная дли
     - `x⁻¹z⁻¹yzxz⁻¹x⁻¹y⁻¹xz`
     - `yz⁻¹z⁻¹y⁻¹p⁻¹z⁻¹x⁻¹y⁻¹y⁻¹z⁻¹z⁻¹yzyzxz⁻¹y⁻¹z⁻¹y⁻¹zzyyzpyzzy⁻¹`
 
-* 1 слово из $\langle x\rangle \cap \langle y\rangle \cap \langle z\rangle \cap \langle p\rangle \cap \langle xyzp\rangle$ за ? c
-
-    Примеры: 
-
-    - ` `
+* 0 слов из $\langle x\rangle \cap \langle y\rangle \cap \langle z\rangle \cap \langle p\rangle \cap \langle xyzp\rangle$
 
 ### $n = 5, l = 60$
 * 1000 слов из $\langle x\rangle$ за 28 с
