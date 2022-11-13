@@ -23,7 +23,7 @@ def one_hot(generators_number, word):
 class MatrixSampler:
     def __init__(
         self, generators_number=2, max_length=10, 
-        beta_1=10, beta_2=500, eps=1e-80, maxiter=400, minimum_upper_bound=1, 
+        beta_1=500, beta_2=500, eps=1e-80, maxiter=400, minimum_upper_bound=1, 
         dtype=np.float64, first=None, verbose=False):
         
         self.eps = eps
@@ -95,8 +95,7 @@ class MatrixSampler:
         for s in range(1, l):
             right = np.zeros(shape=(l,l))
             right[s][0] = 1
-            embedding = np.matmul(zero_first_row, embedding)
-            embedding += np.matmul(first_row, (np.matmul(np.matmul(np.matmul(np.matmul(left, embedding), self.dot_product), embedding.T), right)).T)
+            embedding = np.matmul(zero_first_row, embedding) + np.matmul(first_row, (np.matmul(np.matmul(np.matmul(np.matmul(left, embedding), self.dot_product), embedding.T), right)).T)
             
         embedding = np.matmul(first_row, embedding) - np.array([1, 0, 0, 1], dtype=self.dtype)
         return np.linalg.norm(embedding)**2
@@ -109,7 +108,6 @@ class MatrixSampler:
                 g_norm = np.linalg.norm(g)
                 x = x - g / max(g_norm, self.eps)
                 f_val = self.f_pure(x)
-                print(f_val)
 
                 if g_norm < self.eps and f_val > self.minimum_upper_bound:
                     if self.verbose:
@@ -136,7 +134,7 @@ class MatrixSampler:
 
 
 if __name__ == "__main__":
-    sampler = MatrixSampler(generators_number=2, max_length=25, beta_1=500, verbose=True)
+    sampler = MatrixSampler(generators_number=2, max_length=25)
     start = time.time()
     for i in range(1000):
         print_word(next(sampler))
