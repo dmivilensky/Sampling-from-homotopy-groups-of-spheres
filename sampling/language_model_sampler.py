@@ -1,4 +1,5 @@
 from typing import List
+from dataclasses import dataclass
 
 import torch
 from torch import nn
@@ -36,10 +37,10 @@ class TopKTokenSampler(TokenSampler):
         super().__init__()
         self.k = k
 
-    def scores(self, scores):
+    def forward(self, scores):
         _, idx = torch.topk(scores, self.k, dim = -1, sorted = False)
         scores = torch.scatter(scores, dim = -1, idx = idx, src = -torch.inf)
-        
+
         return self.delegate(scores)
 
 class SuppressTokenSampler(TokenSampler):
@@ -74,3 +75,28 @@ def left_to_right_word_sampling(
         sampled[t] = sampler(scores[-1])
     
     return sampled
+
+
+@dataclass
+class LanguageModelSampler:
+    model: 'nn.Module'
+    sampler: 'TokenSampler'
+    input: 'torch.Tensor'
+    length: int
+    device: 'torch.device'
+    verbose: bool
+
+    def __iter__(self):
+        self.__new_batch__()
+        return self
+
+    def __new_batch__(self):
+        self.batch = left_to_right_word_sampling(self.model, self.sampler, self.input, self.length, self.device, self.verbose)
+        self.idx = 0
+
+    def __next__(self):
+        if self.idx == len(self.batch):
+            self.__new_batch__()
+        result = self.batch[self.idx]
+        self.idx += 1
+        return result
