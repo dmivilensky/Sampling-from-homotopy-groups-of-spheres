@@ -1,4 +1,3 @@
-from email import generator
 from group_tool.reduced_words import normalize
 from group_tool.utils import print_word, parse_word
 

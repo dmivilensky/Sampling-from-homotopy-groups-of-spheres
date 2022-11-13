@@ -1,10 +1,9 @@
 import time
 import random
 import warnings
-from functools import partial
 
 from group_tool.reduced_words import *
-from group_tool.utils import print_word, parse_word
+from group_tool.utils import print_word
 
 
 def distance_to_singleton_normal_closure(word, generators, approximation="reduction"):
@@ -43,7 +42,6 @@ def distance_to_singleton_normal_closure(word, generators, approximation="reduct
 
 
 def better_base(singleton_generators, joint_generator, word, previous_function, first=None):
-    # Only for tests!
     if first:
         current_function = 0
         for gen in singleton_generators[:first]:
@@ -64,7 +62,6 @@ def better_base(singleton_generators, joint_generator, word, previous_function, 
 
 
 def dist_base(singleton_generators, joint_generator, word, first=None):
-    # Only for tests!
     if first:
         return sum(distance_to_singleton_normal_closure(word, gen) for gen in singleton_generators[:first])
     return distance_to_singleton_normal_closure(word, joint_generator) + \
@@ -160,10 +157,15 @@ class EvolutionarySampler:
         if baseline in ["free", "joint", "singleton"]:
             self.dist = lambda word: dist_base(singleton_generators, joint_generator, word, first=first)
             self.better = lambda word, previous_function: better_base(singleton_generators, joint_generator, word, previous_function, first=first)
-            self.condition = lambda word: all(
-                is_from_singleton_normal_closure(gen, word) 
-                for gen in singleton_generators
-                ) and is_from_singleton_normal_closure(joint_generator, word)
+            if not first:
+                self.condition = lambda word: all(
+                    is_from_singleton_normal_closure(gen, word) 
+                    for gen in singleton_generators
+                    ) and is_from_singleton_normal_closure(joint_generator, word)
+            else:
+                self.condition = lambda word: all(
+                    is_from_singleton_normal_closure(gen, word) 
+                    for gen in singleton_generators[:first])
         else:
             raise NotImplementedError()
 
@@ -188,15 +190,6 @@ class EvolutionarySampler:
 
 
 if __name__ == "__main__":
-    # word = parse_word("x⁻¹z⁻¹y⁻¹zyxy⁻¹x⁻¹z⁻¹yzy⁻¹xy")
-    # print(len(word))
-    # print(
-    #     is_from_singleton_normal_closure([[1]], word), 
-    #     is_from_singleton_normal_closure([[2]], word), 
-    #     is_from_singleton_normal_closure([[3]], word), 
-    #     is_from_singleton_normal_closure([[1, 2, 3]], word))
-    # print(dist_base([[[1]], [[2]], [[3]]], [[1, 2, 3]], word))
-
     sampler = EvolutionarySampler(
         baseline="singleton", generators_number=5, 
         max_length=60, max_iters=100, mutation_rate=0.8, 
@@ -204,6 +197,6 @@ if __name__ == "__main__":
         method='gemmate', fixed_size=False, first=3)
     
     start = time.time()
-    for i in range(50):
+    for i in range(1000):
         print_word(next(sampler))
-        print(time.time() - start, 's')
+    print(time.time() - start, 's')

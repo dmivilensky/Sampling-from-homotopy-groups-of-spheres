@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from sklearn.metrics import f1_score, confusion_matrix
 from torch.utils.data import DataLoader
-from sampling.torch_group_datasets import NormalClosure
+from drafts.torch_group_datasets import NormalClosure
 import os
 import pickle
 
