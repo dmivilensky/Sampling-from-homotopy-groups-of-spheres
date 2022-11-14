@@ -212,8 +212,8 @@ def train(config):
     dataset = config.traininig_dataset
     batch_size = config.training_batch_size
 
-    loss_metric = MetricTracker(CatMetric())
-    acc_metric = MetricTracker(Accuracy(num_classes = len(vocab)))
+    loss_metric = config.trainig_loss_metric
+    acc_metric = config.training_accuracy_metric
 
     for epoch in range(1, epochs + 1):
         
