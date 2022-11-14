@@ -1,2 +1,5 @@
 autograd>=1.5
 numpy>=1.23.4
+torch
+torchmetrics
+tqdm
