@@ -113,7 +113,7 @@ def collate_fn_factory(vocab: Dict[str, int]):
         batch = map(lambda word: torch.tensor(word, dtype = torch.long))
         batch = torch.stack(list(batch))
 
-        return batch[:, :-1], batch[:, :-1]
+        return batch[:, :-1], batch[:, 1:]
 
     return collate_fn
 
