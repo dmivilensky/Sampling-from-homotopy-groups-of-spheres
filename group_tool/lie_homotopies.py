@@ -27,23 +27,27 @@ def allowable_set(n, k, p=2, start_from=None, i=1, wave=False):
                         yield [(symbol, first)] + tail
 
 def allowable_set_filtration(n, k, p, j):
-    if is_prime(p):
-        if p == 2:
-            if j == 1:
-                yield from allowable_set(n, k)
-            else:
-                head = [2**i * n for i in range(1, j)]
-                for tail in allowable_set(head[-1], k-j+1, i=j):
-                    yield head + tail
+    if p == 2:
+        if j == 1:
+            yield from allowable_set(n, k)
         else:
-            if j == 1:
-                yield from allowable_set(n, k, p=p)
-            else:
-                head = [("mu", p**(i-1) * n) for i in range(1, j)]
-                for tail in allowable_set(n, k-j+1, p=p, start_from=p*head[-1][1]+1, i=j):
-                    yield head + tail
+            head = [2**i * n for i in range(1, j)]
+            for tail in allowable_set(head[-1], k-j+1, i=j):
+                yield head + tail
     else:
-        pass
+        if j == 1:
+            yield from allowable_set(n, k, p=p)
+        else:
+            head = [("mu", p**(i-1) * n) for i in range(1, j)]
+            for tail in allowable_set(n, k-j+1, p=p, start_from=p*head[-1][1]+1, i=j):
+                yield head + tail
 
-for seq in allowable_set_filtration(2, 2, 3, 2):
-    print(seq)
+def derived_functor_dimension(i, p, k, n):
+    if p == 2:
+        return len(list(filter(lambda seq: i == 2*n + sum(seq), allowable_set(n, k, p))))
+    else:
+        return len(list(filter(lambda seq: i == 2*n + (2*p - 2)*sum(map(lambda pair: pair[1], seq)) - len(list(filter(lambda pair: pair[0] == "lambda", seq))), allowable_set(n, k, p))))
+
+if __name__ == "__main__":
+    for i in range(1, 16):
+        print("i =", i, "dimension =", derived_functor_dimension(i, 2, 3, 1))
