@@ -2,7 +2,7 @@ import math
 import random
 from tqdm import tqdm
 from itertools import islice
-from numpy import random, array, pad
+from numpy import array, pad
 from functools import reduce as freduce
 from typing import List, Iterable, Callable
 
@@ -88,14 +88,11 @@ def subset(iterable: Iterable[List[Word]]) -> Iterable[List[Word]]:
 
 
 def shuffle(iterable: Iterable[List[Word]]) -> Iterable[List[Word]]:
-    for el in iterable:
-        result = list(el)
-        random.shuffle(result)
-        yield result
+    return map(lambda x: random.sample(x, len(x)) , iterable)
 
 
 def join(*iterables: Iterable[Word]) -> Iterable[List[Word]]:
-    return map(list, zip(*iterables))
+    return zip(*iterables)
 
 
 def append(iterable: Iterable[Word], iterables: Iterable[List[Word]]) -> Iterable[List[Word]]:

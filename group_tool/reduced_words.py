@@ -1,12 +1,12 @@
-import random
-from group_tool.utils import random_length
+import random 
+import group_tool.utils as utils
 
 
 def free_group_bounded(generators_number=2, max_length=5):
     generators = set(range(1, generators_number + 1)) | set(range(-generators_number, 0))
 
     while True:
-        length = random_length(max_length)
+        length = utils.random_length(max_length)
         word = [random.sample(generators, 1)[0]]
 
         for _ in range(length-1):
@@ -62,7 +62,7 @@ def normalize(word):
 
 def normal_closure(subgroup, generators_number=2, max_length=5):
     while True:
-        length = random_length(max_length)
+        length = utils.random_length(max_length)
         word = []
 
         while True:
@@ -81,6 +81,18 @@ def normal_closure(subgroup, generators_number=2, max_length=5):
             word = new_word
 
         yield word
+
+
+def symmetric_commutant(generators_number=2, max_length=5):
+    closures =\
+        [normal_closure([[i + 1]], generators_number, max_length) for i in range(generators_number + 1)] +\
+        [normal_closure([list(range(1, generators_number + 1))], generators_number, max_length)]
+    yield from filter(lambda x: len(x) > 0, 
+        map(normalize, 
+        utils.reduce(commutator,
+        utils.shuffle(
+        zip(*closures)
+    ))))
 
 
 def occurs(a, b):
