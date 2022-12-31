@@ -3,3 +3,5 @@ numpy>=1.23.4
 torch
 torchmetrics
 tqdm
+setuptools
+pybind11
