@@ -9,6 +9,7 @@ $$\pi_n(S^2) = \frac{R_0 \cap ... \cap R_{n-1}}{[[R_0, ..., R_{n-1}]]},$$
 
 - [1] Jie Wu. "Combinatorial descriptions of homotopy groups of certain spaces". В: Mathematical Proceedings of the Cambridge Philosophical Society. Т. 130. 3. Cambridge University Press. 2001, с. 489—513.
 - [2] Ralph Fox. "Free Differential Calculus, I: Derivation in the Free Group Ring". Annals of Mathematics. Т. 57. 3. 1953, с. 547–560.
+- [3] Roman Mikhailov. "Homotopy theory of Lie functors". arXiv preprint arXiv:1808.00681. 2018.
 
 ## Статус
 
@@ -17,7 +18,8 @@ $$\pi_n(S^2) = \frac{R_0 \cap ... \cap R_{n-1}}{[[R_0, ..., R_{n-1}]]},$$
 #### Модуль имплементирован
 
 - Генерирование слов, представляющих элементы из свободной группы, нормальных подгрупп; редукция; проверка принадлежности слова нормальной подгруппе ```group_tool.reduced_words```;
-- Автоматическое вычисление производных Фокса [2] ```group_tool.fox_derivatives```.
+- Автоматическое вычисление производных Фокса [2] ```group_tool.fox_derivatives``` / ```group_tool.derivatives```;
+- Вычисление размерности производного функтора от функтора Ли [3] ```group_tool.lie_derived_functors```.
 
 #### Имплементация приостановлена
 
@@ -38,6 +40,12 @@ $$\pi_n(S^2) = \frac{R_0 \cap ... \cap R_{n-1}}{[[R_0, ..., R_{n-1}]]},$$
 
 - Непрерывная оптимизация расстояния до пересечения подгрупп при квазиизометрическом вложении графа Кэли свободной группы в гиперболическое пространство ```embedding```;
 - Максимизация активации нейронной сети, обученной проверять принадлежность слова нормальной подгруппе ```sampling.activation_maximization_sampler```.
+
+### Фильтрация для факторизации симметрическим коммутантом
+
+#### Метод имплементирован
+
+- 
 
 ## Права
 
