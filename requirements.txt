@@ -5,3 +5,5 @@ torchmetrics
 tqdm
 setuptools
 pybind11
+scikit-learn
+catboost

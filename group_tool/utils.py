@@ -95,6 +95,11 @@ def join(*iterables: Iterable[Word]) -> Iterable[List[Word]]:
     return zip(*iterables)
 
 
+def random_union(*iterables: Iterable[Word]) -> Iterable[Word]:
+    while True:
+        yield from random.choice(*iterables)
+
+
 def append(iterable: Iterable[Word], iterables: Iterable[List[Word]]) -> Iterable[List[Word]]:
     for els, el in zip(iterables, iterable):
         els.append(el)

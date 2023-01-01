@@ -6,6 +6,13 @@ from group_tool.reduced_words import is_from_singleton_normal_closure, normalize
 from group_tool.utils import print_word
 
 
+dot_product = np.array(
+    [[[1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+     [[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+     [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0]],
+     [[0, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]]], dtype=np.float64)
+
+
 def softmax(x, beta=10):
     e_x = np.exp(beta * (x - np.matmul(np.expand_dims(np.max(x, axis=1), 1), np.ones(shape=(1, x.shape[1])))))
     return e_x / np.matmul(np.expand_dims(np.sum(e_x, axis=1), 1), np.ones(shape=(1, x.shape[1])))
@@ -37,20 +44,14 @@ class MatrixSampler:
 
         self.Sanov_x = np.array([[1, 2], [0, 1]], dtype=dtype)
         self.Sanov_y = np.array([[1, 0], [2, 1]], dtype=dtype)
-
-        self.dot_product = np.array(
-            [[[1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-             [[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-             [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0]],
-             [[0, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]]], dtype=dtype)
         
         if not first:
             first = generators_number
 
         self.f_pure = lambda x: sum(
-                partial(self.distance_from_normal_closure, generators_number, [i])(softmax(x.reshape(max_length, 2*generators_number+1), beta_1))
+                partial(MatrixSampler.distance_from_normal_closure, generators_number, [i])(softmax(x.reshape(max_length, 2*generators_number+1), beta_1))
                 for i in range(1, min(first, generators_number)+1)) / min(first, generators_number)
-        self.penalty = lambda x: 1/self.distance_from_normal_closure(generators_number, [], softmax(x.reshape(max_length, 2*generators_number+1), beta_2))
+        self.penalty = lambda x: 1/MatrixSampler.distance_from_normal_closure(generators_number, [], softmax(x.reshape(max_length, 2*generators_number+1), beta_2))
         self.f = lambda x: self.f_pure(x) + self.penalty(x)
 
         self.first = first
@@ -58,13 +59,15 @@ class MatrixSampler:
 
         self.gen = self.sample_word()
 
-    def generators_embedding(self, i):
-        return np.array([[16*(i**2) + 4*i + 1, 8*i], [-8*(i**2), 1-4*i]], dtype=self.dtype)
+    @staticmethod
+    def generators_embedding(i, dtype=np.float64):
+        return np.array([[16*(i**2) + 4*i + 1, 8*i], [-8*(i**2), 1-4*i]], dtype=dtype)
 
-    def get_substitute_and_embed(self, generators_number, i):
+    @staticmethod
+    def get_substitute_and_embed(generators_number, i):
         embed = np.vstack([np.eye(2).flatten()] +\
-            [self.generators_embedding(j).flatten() for j in range(1, generators_number+1)] +\
-            [np.linalg.inv(self.generators_embedding(j)).flatten() for j in range(1, generators_number+1)])
+            [MatrixSampler.generators_embedding(j).flatten() for j in range(1, generators_number+1)] +\
+            [np.linalg.inv(MatrixSampler.generators_embedding(j)).flatten() for j in range(1, generators_number+1)])
 
         if i is None:
             return embed
@@ -77,11 +80,12 @@ class MatrixSampler:
 
         return np.matmul(remove_generator, embed)
 
-    def distance_from_normal_closure(self, generators_number, generator, one_hot):
+    @staticmethod
+    def distance_from_normal_closure(generators_number, generator, one_hot, dtype=np.float64, distance=True):
         l = one_hot.shape[0]
 
         if len(generator) <= 1:
-            embedding = np.matmul(one_hot, self.get_substitute_and_embed(generators_number, generator[0] if len(generator) == 1 else None))
+            embedding = np.matmul(one_hot, MatrixSampler.get_substitute_and_embed(generators_number, generator[0] if len(generator) == 1 else None))
         else:
             raise NotImplementedError('`generators` must contain no more than one generator ;)')
 
@@ -95,10 +99,13 @@ class MatrixSampler:
         for s in range(1, l):
             right = np.zeros(shape=(l,l))
             right[s][0] = 1
-            embedding = np.matmul(zero_first_row, embedding) + np.matmul(first_row, (np.matmul(np.matmul(np.matmul(np.matmul(left, embedding), self.dot_product), embedding.T), right)).T)
+            embedding = np.matmul(zero_first_row, embedding) + np.matmul(first_row, (np.matmul(np.matmul(np.matmul(np.matmul(left, embedding), dot_product), embedding.T), right)).T)
             
-        embedding = np.matmul(first_row, embedding) - np.array([1, 0, 0, 1], dtype=self.dtype)
-        return np.linalg.norm(embedding)**2
+        if distance:
+            embedding = np.matmul(first_row, embedding) - np.array([1, 0, 0, 1], dtype=dtype)
+            return np.linalg.norm(embedding)**2
+        else:
+            return np.matmul(first_row, embedding)
 
     def sample_word(self):
         while True:

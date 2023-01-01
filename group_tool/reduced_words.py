@@ -85,7 +85,7 @@ def normal_closure(subgroup, generators_number=2, max_length=5):
 
 def symmetric_commutant(generators_number=2, max_length=5):
     closures =\
-        [normal_closure([[i + 1]], generators_number, max_length) for i in range(generators_number + 1)] +\
+        [normal_closure([[i]], generators_number, max_length) for i in range(1, generators_number + 1)] +\
         [normal_closure([list(range(1, generators_number + 1))], generators_number, max_length)]
     yield from filter(lambda x: len(x) > 0, 
         map(normalize, 

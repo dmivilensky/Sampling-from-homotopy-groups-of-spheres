@@ -13,5 +13,9 @@ args = parser.parse_args()
 symcom = symmetric_commutant(args.generators_number, args.max_length)
 dataset = list(islice(symcom, args.size))
 
-with open(f"datasets/symcom_n={args.generators_number}_l={args.max_length}.pkl", "wb") as file:
+print('average length =', int(sum(map(len, dataset)) / len(dataset)))
+real_max_length = max(map(len, dataset))
+print('max length =', real_max_length)
+
+with open(f"datasets/symcom_n={args.generators_number}_l={real_max_length}.pkl", "wb") as file:
     pickle.dump(dataset, file)
