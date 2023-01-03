@@ -46,6 +46,15 @@ where $R_i = \langle x_i \rangle \subset F$ is a subgroup of free group $F$ gene
 
 - 
 
+## Installation
+
+To install module `freegroup` run following commands:
+
+`python -m pip install -r freegroup/requirements.txt`
+`python -m pip install ./freegroup`
+
+After this, you'll be able to use packages `freegroup.tools`, `freegroup.sampling`, `freegroup.derivatives`.
+
 ## Rights
 
 Copyright © Fedor Pavutnitskiy, Dmitrii Vilensky-Pasechnyuk, Kirill Brilliantov and German Magai
