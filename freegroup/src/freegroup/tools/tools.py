@@ -101,29 +101,24 @@ def is_from_singleton_normal_closure(generators, word):
     if len(generators) != 1:
         raise NotImplementedError('`generators` must contain only one generator ;)')
 
-    contained_smth_to_reduce = True
     generator = generators[0]
-    generator_len = len(generator)
+    generator_len = len(generators)
 
     doubled_generator  = generator * 2
     doubled_reciprocal = reciprocal(generator) * 2
 
-    while contained_smth_to_reduce:
-        contained_smth_to_reduce = False
-        new_word = []
+    reduced = []
+    for factor in word:
+        reduced.append(factor)
+        if len(reduced) >= 1 and reduced[-1] == 0:
+            del reduced[-1:]
 
-        i = 0
-        while i <= len(word) - generator_len:
-            subword = word[i:i + generator_len]
-            if occurs(subword, doubled_generator) or occurs(subword, doubled_reciprocal):
-                contained_smth_to_reduce = True
-                i += generator_len
-            else:
-                new_word.append(word[i])
-                i += 1
-        
-        if i < len(word):
-            new_word += word[-(len(word)-i):]
-        word = normalize(new_word)
-    
-    return len(word) == 0
+        if len(reduced) >= 2 and reduced[-2] == -reduced[-1]:
+            del reduced[-2:]
+
+        if len(reduced) >= generator_len:
+            if occurs(reduced[-generator_len:], doubled_generator) \
+                or occurs(reduced[-generator_len:], doubled_reciprocal):
+                del reduced[-generator_len:]
+            
+    return len(reduced) == 0

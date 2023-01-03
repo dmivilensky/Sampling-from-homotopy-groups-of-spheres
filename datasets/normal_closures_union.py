@@ -1,8 +1,7 @@
 import pickle
 from itertools import islice
 from argparse import ArgumentParser
-from sampling.freegroup import normal_closure
-from sampling.utils import random_union
+from freergoup.sampling import normal_closure, random_union
 
 
 parser = ArgumentParser(description='Generate dataset of elements from union of normal closures')

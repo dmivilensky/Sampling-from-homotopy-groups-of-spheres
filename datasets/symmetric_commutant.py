@@ -1,7 +1,7 @@
 import pickle
 from itertools import islice
 from argparse import ArgumentParser
-from group_tool.reduced_words import symmetric_commutant
+from freegorup.sampling import symmetric_commutant
 
 
 parser = ArgumentParser(description='Generate dataset of elements from symmetric commutant')

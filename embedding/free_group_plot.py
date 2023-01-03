@@ -2,7 +2,7 @@ import numpy as np
 from numpy.linalg import inv
 from itertools import chain
 from matplotlib import pyplot as plt
-import group_tool.reduced_words as fg
+import freegroup.tools as fg
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)

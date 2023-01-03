@@ -1,5 +1,4 @@
-from group_tool.reduced_words import normalize
-from group_tool.utils import print_word, parse_word
+from freegroup.tools import normalize, print_word, parse_word
 
 
 def factorize(w):

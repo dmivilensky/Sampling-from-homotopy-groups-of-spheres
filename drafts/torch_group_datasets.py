@@ -1,7 +1,8 @@
 import torch
 from itertools import islice
 from torch.utils.data import Dataset
-from group_tool.reduced_words import free_group_bounded, is_from_singleton_normal_closure
+from freegroup.tools import is_from_singleton_normal_closure
+from freegroup.sampling import free_group_bounded
 
 
 def cross_encoding(word, generators_number):

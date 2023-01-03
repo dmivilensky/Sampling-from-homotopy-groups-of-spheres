@@ -1,5 +1,5 @@
 import numpy as np
-from group_tool.reduced_words import free_group_bounded
+from freegroup.tools import free_group_bounded
 
 dt = np.int32
 

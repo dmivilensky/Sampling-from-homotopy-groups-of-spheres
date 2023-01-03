@@ -1,5 +1,5 @@
 from typing import Iterable, List, Callable
-from group_tool.utils import Word
+from freegroup.tools import Word
 
 import math
 from numpy import random
