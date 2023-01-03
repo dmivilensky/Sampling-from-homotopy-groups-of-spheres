@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.svm import SVC
 from catboost import CatBoostClassifier
 from sklearn.metrics import confusion_matrix
-from sampling.matrix_sampler import one_hot, MatrixSampler
+from sampling.intersection.matrix_sampler import one_hot, MatrixSampler
 
 generators_number = 3
 max_len = 66

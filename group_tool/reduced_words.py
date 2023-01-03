@@ -1,19 +1,48 @@
-import random 
-import group_tool.utils as utils
+from typing import List, Iterable
+from numpy import array, pad
 
 
-def free_group_bounded(generators_number=2, max_length=5):
-    generators = set(range(1, generators_number + 1)) | set(range(-generators_number, 0))
+Word = List[int]
 
-    while True:
-        length = utils.random_length(max_length)
-        word = [random.sample(generators, 1)[0]]
 
-        for _ in range(length-1):
-            factor = random.sample(generators - set([-word[-1]]), 1)[0]
-            word.append(factor)
+LETTERS = "xyzpqrstuvwklmn"
 
-        yield word
+def print_word(word, verbose=True):
+    result = []
+    for factor in word:
+        if type(factor) is list:
+            result.append("[" + ",".join(print_word(factor, verbose=False)) + "]")
+        else:
+            result.append(LETTERS[abs(factor) - 1] + ("⁻¹" if factor < 0 else ""))
+    
+    if verbose:
+        print("".join(result))
+    return result
+
+
+def print_words(words, verbose=True):
+    for word in words:
+        yield print_word(word, verbose)
+
+
+def parse_word(string, order=None):
+    letters = LETTERS[:order]
+    i = 0
+    word = []
+    while i < len(string):
+        if string[i] != "⁻":
+            word.append(letters.index(string[i]) + 1)
+            i += 1
+        else:
+            word[-1] = -word[-1]
+            i += 2
+    return word
+
+
+def to_numpy(words: Iterable[Word]):
+    words = list(words)
+    max_length = max(map(len, words))
+    return array(list(map(lambda v: pad(v, (0, max_length - len(v))), words)))
 
 
 def reciprocal(word):
@@ -58,41 +87,6 @@ def normalize(word):
             normalized.append(factor)
 
     return normalized
-
-
-def normal_closure(subgroup, generators_number=2, max_length=5):
-    while True:
-        length = utils.random_length(max_length)
-        word = []
-
-        while True:
-            factor = random.sample(subgroup, 1)[0]
-            if random.random() > 0.5:
-                factor = reciprocal(factor)
-
-            conjugator = next(free_group_bounded(
-                generators_number=generators_number, 
-                max_length=(length - len(word) - len(factor)) // 2
-            ))
-            new_word = word + conjugation(factor, conjugator)
-            new_word = normalize(new_word)
-            if len(new_word) > max_length:
-                break
-            word = new_word
-
-        yield word
-
-
-def symmetric_commutant(generators_number=2, max_length=5):
-    closures =\
-        [normal_closure([[i]], generators_number, max_length) for i in range(1, generators_number + 1)] +\
-        [normal_closure([list(range(1, generators_number + 1))], generators_number, max_length)]
-    yield from filter(lambda x: len(x) > 0, 
-        map(normalize, 
-        utils.reduce(commutator,
-        utils.shuffle(
-        zip(*closures)
-    ))))
 
 
 def occurs(a, b):
