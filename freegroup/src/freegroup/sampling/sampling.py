@@ -19,7 +19,7 @@ def free_group_bounded(generators_number=2, max_length=5):
         yield word
 
 
-def normal_closure(generators: List[tools.Word], fg_dimension: int, method: str, **params):
+def normal_closure(generators: List[tools.Word], fg_dimension: int, method: str = 'conjugation', **params):
     if method == 'conjugation':
         return normal_closure_conjugation(generators, fg_dimension, **params)
     
