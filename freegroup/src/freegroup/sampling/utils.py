@@ -2,7 +2,7 @@ from typing import Iterable, List, Callable
 from freegroup.tools import Word
 
 import math
-from numpy import random
+import random
 
 from itertools import islice
 from functools import reduce as freduce
@@ -18,9 +18,9 @@ def random_length(radius, method="uniform"):
         return max(1, int(round(random.random() * radius)))
 
 
-def iterable_from_batches(sampler: Callable[[], List[Word]]) -> Iterable[Word]:
+def iterable_from_batches(batch_sampler: Callable[[], List[Word]]) -> Iterable[Word]:
     while True:
-        for word in sampler():
+        for word in batch_sampler():
             yield word
 
 
@@ -34,7 +34,7 @@ def unique(iterable: Iterable[Word]) -> Iterable[Word]:
 
 def subset(iterable: Iterable[List[Word]]) -> Iterable[List[Word]]:
     for el in iterable:
-        result, subset = [], random.randint(0, 2 ** (len(el)))
+        result, subset = [], random.randint(0, 2 ** (len(el)) - 1)
         for i, w in enumerate(el):
             if subset & (1 << i):
                 result.append(w)
