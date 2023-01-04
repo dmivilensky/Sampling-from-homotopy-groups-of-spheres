@@ -97,12 +97,8 @@ def occurs(a, b):
     return False
 
 
-def is_from_singleton_normal_closure(generators, word):
-    if len(generators) != 1:
-        raise NotImplementedError('`generators` must contain only one generator ;)')
-
-    generator = generators[0]
-    generator_len = len(generators)
+def is_from_singleton_normal_closure(generator, word):
+    generator_len = len(generator)
 
     doubled_generator  = generator * 2
     doubled_reciprocal = reciprocal(generator) * 2

@@ -2,8 +2,15 @@ from typing import List, Tuple
 
 from numpy import random
 from random import sample
-from .utils import random_length
+from .utils import (
+    random_length,
+    join,
+    shuffle,
+    reduce,
+    subset,
+)
 import freegroup.tools as tools
+from itertools import repeat
 
 
 def free_group_bounded(generators_number=2, max_length=5):
@@ -19,25 +26,23 @@ def free_group_bounded(generators_number=2, max_length=5):
         yield word
 
 
-def normal_closure(generators: List[tools.Word], fg_dimension: int, method: str = 'conjugation', **params):
+def normal_closure(generator: tools.Word, fg_dimension: int, method: str = 'conjugation', **params):
     if method == 'conjugation':
-        return normal_closure_conjugation(generators, fg_dimension, **params)
+        return normal_closure_conjugation(generator, fg_dimension, **params)
     
     if method == 'brackets':
-        return normal_closure_brackets(generators, fg_dimension, **params)
+        return normal_closure_brackets(generator, fg_dimension, **params)
 
     raise ValueError('Unknown method')
 
 
-def normal_closure_conjugation(subgroup, generators_number=2, max_length=5):
+def normal_closure_conjugation(generator, generators_number=2, max_length=5):
     while True:
         length = random_length(max_length)
         word = []
 
         while True:
-            factor = random.sample(subgroup, 1)[0]
-            if random.random() > 0.5:
-                factor = tools.reciprocal(factor)
+            factor = generator if random.random() > 0.5 else tools.reciprocal(generator)
 
             conjugator = next(free_group_bounded(
                 generators_number=generators_number, 
@@ -122,13 +127,25 @@ def random_from_identities(depth: int, identites: List[Tuple[tools.Word, tools.W
     return sum(sampled, [])
 
 
-def normal_closure_brackets(generators: List[tools.Word], free_group_dimension: int, max_depth: int):
-    assert len(generators) == 1
+def normal_closure_brackets(generator: tools.Word, free_group_dimension: int, max_depth: int):
     identities = [([-x], [x]) for x in range(1, free_group_dimension + 1)]
-    base, i_base = generators[0], tools.reciprocal(generators[0])
+    base, i_base = generator, tools.reciprocal(generator)
     for t in range(0, len(base)):
         identities.append((base[:t], base[t:]))
         identities.append((i_base[:t], i_base[t:]))
 
     while True:
         yield random_from_identities(random_length(max_depth), identities)
+
+
+def symmetric_commutant(
+    generators: List[tools.Word],
+    fg_dimension: int,
+    n_multipliers: int,
+    closure_method: str = 'conjugation',
+    **closure_params,
+):
+    closures = [normal_closure(g, fg_dimension, closure_method, **closure_params) for g in generators]
+    g = reduce(tools.commutator, shuffle(join(*closures)))
+    g = reduce(tools.multiply, subset(join(*repeat(g, n_multipliers))))
+    yield from filter(lambda x: len(x) > 0, map(tools.normalize, g))
