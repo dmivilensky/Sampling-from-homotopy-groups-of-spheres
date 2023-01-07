@@ -1,20 +1,12 @@
+from typing import Iterable, List, Callable
+from freegroup.tools import Word
+
 import math
 import random
-from tqdm import tqdm
+
 from itertools import islice
-from numpy import array, pad
 from functools import reduce as freduce
-from typing import List, Iterable, Callable
-
-
-def is_sublist(t: List, s: List):
-    if len(s) == 0:
-        return False
-    for i in range(len(s) - len(t)):
-        if all(map(lambda v: v[0] == v[1], zip(t, s[i:i+len(t)]))):
-            return True
-    return False
-
+from tqdm import tqdm
 
 def random_length(radius, method="uniform"):
     if method == "uniform":
@@ -26,48 +18,10 @@ def random_length(radius, method="uniform"):
         return max(1, int(round(random.random() * radius)))
 
 
-LETTERS = "xyzpqrstuvwklmn"
-
-
-def print_word(word, verbose=True):
-    result = []
-    for factor in word:
-        if type(factor) is list:
-            result.append("[" + ",".join(print_word(factor, verbose=False)) + "]")
-        else:
-            result.append(LETTERS[abs(factor) - 1] + ("⁻¹" if factor < 0 else ""))
-    
-    if verbose:
-        print("".join(result))
-    return result
-
-
-def print_words(words, verbose=True):
-    for word in words:
-        yield print_word(word, verbose)
-
-
-def parse_word(string, order=None):
-    letters = LETTERS[:order]
-    i = 0
-    word = []
-    while i < len(string):
-        if string[i] != "⁻":
-            word.append(letters.index(string[i]) + 1)
-            i += 1
-        else:
-            word[-1] = -word[-1]
-            i += 2
-    return word
-
-
-Word = List[int]
-
-
-def to_numpy(words: Iterable[Word]):
-    words = list(words)
-    max_length = max(map(len, words))
-    return array(list(map(lambda v: pad(v, (0, max_length - len(v))), words)))
+def iterable_from_batches(batch_sampler: Callable[[], List[Word]]) -> Iterable[Word]:
+    while True:
+        for word in batch_sampler():
+            yield word
 
 
 def unique(iterable: Iterable[Word]) -> Iterable[Word]:
@@ -80,7 +34,7 @@ def unique(iterable: Iterable[Word]) -> Iterable[Word]:
 
 def subset(iterable: Iterable[List[Word]]) -> Iterable[List[Word]]:
     for el in iterable:
-        result, subset = [], random.randint(0, 2 ** (len(el)))
+        result, subset = [], random.randint(0, 2 ** (len(el)) - 1)
         for i, w in enumerate(el):
             if subset & (1 << i):
                 result.append(w)
@@ -113,3 +67,9 @@ def reduce(fn: Callable[[Word, Word], Word], iterables: Iterable[List[Word]]) ->
 def take_unique(take: int, iterable: Iterable[Word], verbose = False) -> Iterable[Word]:
     iterable = islice(unique(iterable), take)
     return tqdm(iterable, total=take) if verbose else iterable
+
+
+def prefixes(iterable: Iterable[Word]) -> Iterable[Word]:
+    for el in iterable:
+        for t in range(len(el)):
+            yield el[:t + 1]

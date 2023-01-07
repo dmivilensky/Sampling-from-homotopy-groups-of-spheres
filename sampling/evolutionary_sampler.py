@@ -2,8 +2,8 @@ import time
 import random
 import warnings
 
-from group_tool.reduced_words import *
-from group_tool.utils import print_word
+from freegroup.tools import *
+from freegroup.sampling import (free_group_bounded, normal_closure_conjugation as normal_closure)
 
 
 def distance_to_singleton_normal_closure(word, generators, approximation="reduction"):

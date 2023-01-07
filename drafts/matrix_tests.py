@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from group_tool.reduced_words import free_group_bounded
+from freegroup.sampling import free_group_bounded 
 
 plt.figure(figsize=(10, 8))
 for dt in [np.int16, np.int32, np.int64, np.float32]:

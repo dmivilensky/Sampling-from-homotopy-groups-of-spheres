@@ -1,8 +1,7 @@
 import pickle
 from itertools import islice
 from argparse import ArgumentParser
-from group_tool.reduced_words import normal_closure
-from group_tool.utils import random_union
+from freegroup.sampling import normal_closure, random_union, take_unique
 
 
 parser = ArgumentParser(description='Generate dataset of elements from union of normal closures')
@@ -12,11 +11,11 @@ parser.add_argument('size', type=int, help='desired number of words in the datas
 args = parser.parse_args()
 
 closures =\
-    [normal_closure([[i]], args.generators_number, args.max_length) for i in range(1, args.generators_number + 1)] +\
-    [normal_closure([list(range(1, args.generators_number + 1))], args.generators_number, args.max_length)]
+    [normal_closure([i], args.generators_number, max_length = args.max_length) for i in range(1, args.generators_number + 1)] +\
+    [normal_closure(list(range(1, args.generators_number + 1)), args.generators_number, max_length = args.max_length)]
 
 clsunion = random_union(closures)
-dataset = list(islice(clsunion, args.size))
+dataset = list(take_unique(args.size, clsunion))
 
 with open(f"datasets/clsunion_n={args.generators_number}_l={args.max_length}.pkl", "wb") as file:
     pickle.dump(dataset, file)

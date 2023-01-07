@@ -2,8 +2,7 @@ import time
 from autograd import numpy as np
 from autograd import grad
 from functools import partial
-from group_tool.reduced_words import is_from_singleton_normal_closure, normalize
-from group_tool.utils import print_word
+from freegroup.tools import is_from_singleton_normal_closure, normalize, print_word
 
 
 dot_product = np.array(
