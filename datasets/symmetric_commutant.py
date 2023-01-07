@@ -1,8 +1,7 @@
 import pickle
 from itertools import islice
 from argparse import ArgumentParser
-import freegroups.sampling as smp
-from freegroups.tools import commutator, multiply, normalize
+from freegroup.sampling import symmetric_commutant, take_unique
 from itertools import repeat
 
 parser = ArgumentParser(description='Generate dataset of elements from symmetric commutant')
@@ -13,21 +12,16 @@ parser.add_argument('max_number_multipliers', type=int, help='maximal number of 
 parser.add_argument('size', type=int, help='desired number of words in the dataset')
 args = parser.parse_args()
 
-gs = [smp.normal_closure([[i]], args.generators_number, max_length=args.part_max_length) for i in range(1, args.generators_number + 1)] +\
-    [smp.normal_closure([list(range(1, args.generators_number + 1))], args.generators_number, args.part_max_length)]
+generators = [[i] for i in range(1, args.generators_number + 1)] + \
+    [list(range(1, args.generators_number + 1))]
 
-g = smp.join(gs)
-g = smp.shuffle(g)
-g = smp.reduce(commutator, g)
-
-g = smp.join(*repeat(g, args.max_number_multipliers))
-g = smp.subset(g)
-g = smp.reduce(multiply, g)
-
-g = map(normalize, g)
-g = filter(lambda x: len(x) > 0 and len(x) < args.max_length, g)
-
-dataset = list(smp.take_unique(args.size, g))
+g = symmetric_commutant(generators,
+    args.generators_number,
+    args.max_number_multipliers,
+    max_length = args.part_max_length
+)
+g = filter(lambda x: len(x) < args.max_length, g)
+dataset = list(take_unique(args.size, g))
 
 print('average length =', int(sum(map(len, dataset)) / len(dataset)))
 real_max_length = max(map(len, dataset))

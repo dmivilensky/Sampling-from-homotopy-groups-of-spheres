@@ -57,19 +57,6 @@ def normal_closure_conjugation(generator, generators_number=2, max_length=5):
         yield word
 
 
-# def symmetric_commutant(generators_number=2, max_length=5):
-#     closures =\
-#         [normal_closure([[i]], generators_number, max_length) for i in range(1, generators_number + 1)] +\
-#         [normal_closure([list(range(1, generators_number + 1))], generators_number, max_length)]
-#     yield from filter(lambda x: len(x) > 0, 
-#         map(normalize, 
-#         utils.reduce(commutator,
-#         utils.shuffle(
-#         zip(*closures)
-#     ))))
-
-
-
 def random_bracket_sequence(n):
     """Generates a balanced sequence of n +1s and n -1s corresponding to correctly nested brackets."""
     # "Generating binary trees at random", Atkinson & Sack, 1992
