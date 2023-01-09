@@ -32,9 +32,9 @@ def unique(iterable: Iterable[Word]) -> Iterable[Word]:
             yield el
 
 
-def subset(iterable: Iterable[List[Word]]) -> Iterable[List[Word]]:
+def subset(iterable: Iterable[List[Word]], empty: bool = False) -> Iterable[List[Word]]:
     for el in iterable:
-        result, subset = [], random.randint(0, 2 ** (len(el)) - 1)
+        result, subset = [], random.randint(1 if not empty else 0, 2 ** (len(el)) - 1)
         for i, w in enumerate(el):
             if subset & (1 << i):
                 result.append(w)
@@ -54,17 +54,17 @@ def random_union(*iterables: Iterable[Word]) -> Iterable[Word]:
         yield from random.choice(*iterables)
 
 
-def append(iterable: Iterable[Word], iterables: Iterable[List[Word]]) -> Iterable[List[Word]]:
+def append(iterables: Iterable[List[Word]], iterable: Iterable[Word]) -> Iterable[List[Word]]:
     for els, el in zip(iterables, iterable):
         els.append(el)
         yield els
 
 
-def reduce(fn: Callable[[Word, Word], Word], iterables: Iterable[List[Word]]) -> Iterable[Word]:
+def reduce(iterables: Iterable[List[Word]], fn: Callable[[Word, Word], Word]) -> Iterable[Word]:
     return map(lambda l: freduce(fn, l) if l else [], iterables)
 
 
-def take_unique(take: int, iterable: Iterable[Word], verbose = False) -> Iterable[Word]:
+def take_unique(iterable: Iterable[Word], take: int, verbose = False) -> Iterable[Word]:
     iterable = islice(unique(iterable), take)
     return tqdm(iterable, total=take) if verbose else iterable
 
