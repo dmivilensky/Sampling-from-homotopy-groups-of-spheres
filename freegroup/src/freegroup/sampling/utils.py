@@ -60,11 +60,11 @@ def append(iterables: Iterable[List[Word]], iterable: Iterable[Word]) -> Iterabl
         yield els
 
 
-def reduce(iterables: Iterable[List[Word]], fn: Callable[[Word, Word], Word]) -> Iterable[Word]:
+def reduce(fn: Callable[[Word, Word], Word], iterables: Iterable[List[Word]]) -> Iterable[Word]:
     return map(lambda l: freduce(fn, l) if l else [], iterables)
 
 
-def take_unique(iterable: Iterable[Word], take: int, verbose = False) -> Iterable[Word]:
+def take_unique(take: int, iterable: Iterable[Word], verbose = False) -> Iterable[Word]:
     iterable = islice(unique(iterable), take)
     return tqdm(iterable, total=take) if verbose else iterable
 
