@@ -4,7 +4,6 @@ from numpy import random
 from random import sample
 from .utils import (
     random_length,
-    join,
     shuffle,
     reduce,
     subset,
@@ -13,11 +12,11 @@ import freegroup.tools as tools
 from itertools import repeat
 
 
-def free_group_bounded(generators_number=2, max_length=5):
+def free_group_bounded(generators_number=2, max_length=5, random_length_method = "uniform"):
     generators = set(range(1, generators_number + 1)) | set(range(-generators_number, 0))
 
     while True:
-        length = random_length(max_length)
+        length = random_length(max_length, random_length_method)
         word = sample(generators, 1)
         for _ in range(length-1):
             factor = sample(generators - set([-word[-1]]), 1)[0]
@@ -133,6 +132,6 @@ def symmetric_commutant(
     **closure_params,
 ):
     closures = [normal_closure(g, fg_dimension, closure_method, **closure_params) for g in generators]
-    g = reduce(tools.commutator, shuffle(join(*closures)))
-    g = reduce(tools.multiply, subset(join(*repeat(g, n_multipliers))))
+    g = reduce(tools.commutator, shuffle(zip(*closures)))
+    g = reduce(tools.multiply, subset(zip(*repeat(g, n_multipliers))))
     yield from filter(lambda x: len(x) > 0, map(tools.normalize, g))

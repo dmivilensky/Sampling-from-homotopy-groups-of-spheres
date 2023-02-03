@@ -4,11 +4,14 @@ from freegroup.tools import Word
 import math
 import random
 
-from itertools import islice
+from itertools import islice, repeat
 from functools import reduce as freduce
 from tqdm import tqdm
 
 def random_length(radius, method="uniform"):
+    if not isinstance(method, str):
+        return method()
+    
     if method == "uniform":
         # https://arxiv.org/pdf/1805.08207.pdf 6.3 Uniform sampling in hyperbolic space
         return max(1, int(round(math.acosh(1 + random.random() * (math.cosh(radius) - 1)))))
@@ -18,17 +21,19 @@ def random_length(radius, method="uniform"):
         return max(1, int(round(random.random() * radius)))
 
 
-def iterable_from_batches(batch_sampler: Callable[[], List[Word]]) -> Iterable[Word]:
-    while True:
+def iterable_from_batches(batch_sampler: Callable[[], List[Word]], num_tries: int = None) -> Iterable[Word]:
+    for _ in repeat(None) if num_tries is None else repeat(None, num_tries):
         for word in batch_sampler():
             yield word
 
 
-def unique(iterable: Iterable[Word]) -> Iterable[Word]:
+def unique(iterable: Iterable[Word], key = None) -> Iterable[Word]:
     seen = set()
+
     for el in iterable:
-        if not tuple(el) in seen:
-            seen.add(tuple(el))
+        test = el if key is None else key(el)
+        if test not in seen:
+            seen.add(test)
             yield el
 
 
@@ -45,27 +50,17 @@ def shuffle(iterable: Iterable[List[Word]]) -> Iterable[List[Word]]:
     return map(lambda x: random.sample(x, len(x)) , iterable)
 
 
-def join(*iterables: Iterable[Word]) -> Iterable[List[Word]]:
-    return zip(*iterables)
-
-
 def random_union(*iterables: Iterable[Word]) -> Iterable[Word]:
     while True:
         yield from random.choice(*iterables)
-
-
-def append(iterables: Iterable[List[Word]], iterable: Iterable[Word]) -> Iterable[List[Word]]:
-    for els, el in zip(iterables, iterable):
-        els.append(el)
-        yield els
 
 
 def reduce(fn: Callable[[Word, Word], Word], iterables: Iterable[List[Word]]) -> Iterable[Word]:
     return map(lambda l: freduce(fn, l) if l else [], iterables)
 
 
-def take_unique(take: int, iterable: Iterable[Word], verbose = False) -> Iterable[Word]:
-    iterable = islice(unique(iterable), take)
+def take_unique(take: int, iterable: Iterable[Word], key = tuple, verbose = False) -> Iterable[Word]:
+    iterable = islice(unique(iterable, key=key), take)
     return tqdm(iterable, total=take) if verbose else iterable
 
 
