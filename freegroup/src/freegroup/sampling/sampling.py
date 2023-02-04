@@ -16,7 +16,7 @@ def free_group_bounded(generators_number=2, max_length=5, random_length_method =
     generators = set(range(1, generators_number + 1)) | set(range(-generators_number, 0))
 
     while True:
-        length = random_length(max_length, random_length_method)
+        length = random_length(max_length, method = random_length_method)
         word = sample(generators, 1)
         for _ in range(length-1):
             factor = sample(generators - set([-word[-1]]), 1)[0]
