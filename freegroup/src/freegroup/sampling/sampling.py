@@ -135,19 +135,17 @@ def normal_closure_brackets(generator, free_group_dimension: int, max_depth: int
         yield random_from_identities(random_length(max_depth, random_depth_method), identities)
 
 
-def _random_commutator(words: Iterable):
-    words = list(words)
-    if len(words) == 0:
-        raise ValueError
-    if len(words) == 1:
-        return words[0]
-    if len(words) == 2:
-        return tuple(words)
-    if len(words) >= 2:
-        split_idx = randint(1, len(words) - 1)
+def random_order_commutant(closures: Iterable[Tuple]):
+    def _random_commutator(words):
+        if len(words) == 0:
+            raise ValueError
+        if len(words) == 1:
+            return words[0]
+        if len(words) == 2:
+            return tuple(words)
+        if len(words) >= 2:
+            split_idx = randint(1, len(words) - 1)
         return (_random_commutator(words[:split_idx]), _random_commutator(words[split_idx:]))
 
-
-def random_order_commutant(closures: List[Iterable]):
-    return map(_random_commutator, zip(*closures))
+    return map(lambda x: _random_commutator(list(x)), closures)
 

@@ -57,6 +57,9 @@ class Conjugate(Visitor):
     def __init__(self, conjugator):
         self.conjugator = conjugator
 
+    def visit_generator(self, generator):
+        return [reciprocal(self.conjugator)] + [generator] + [self.conjugator]
+
     def visit_commutator(self, commutator):
         return tuple(self(x) for x in commutator)
 
