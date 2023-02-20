@@ -16,9 +16,9 @@ where $R_i = \langle x_i \rangle \subset F$ is a subgroup of free group $F$ gene
 
 #### Module's implemented
 
-- Generation of the words, representing elements from free group, normal subgroups; reduction; checking if element is in normal subgroup ```group_tool.reduced_words```;
-- Automatic calculation of Fox derivatives [2] ```group_tool.fox_derivatives``` / ```group_tool.derivatives```;
-- Calculation of dimension of derived functor of Lie functor [3] ```group_tool.lie_derived_functors```.
+- Generation of the words, representing elements from free group, normal subgroups; reduction; checking if element is in normal subgroup ```freegroup.tools```, ```freegroup.sampling```;
+- Automatic calculation of Fox derivatives [2] ```freegroup.derivatives```;
+- Calculation of dimension of derived functor of Lie functor [3] ```lie-derived-functors```.
 
 #### Implementation's paused
 
