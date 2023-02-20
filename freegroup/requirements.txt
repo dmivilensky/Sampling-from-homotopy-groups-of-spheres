@@ -3,3 +3,4 @@ pybind11
 setuptools
 tqdm
 parsec
+iteration-utilities

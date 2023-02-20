@@ -1,7 +1,10 @@
 import pickle
 from itertools import islice
 from argparse import ArgumentParser
-from freegroup.sampling import normal_closure, random_union, take_unique
+from random import choice
+from freegroup.sampling import normal_closure
+from iteration_utilities import unique_everseen
+from itertools import islice
 
 
 parser = ArgumentParser(description='Generate dataset of elements from union of normal closures')
@@ -14,8 +17,8 @@ closures =\
     [normal_closure([i], args.generators_number, max_length = args.max_length) for i in range(1, args.generators_number + 1)] +\
     [normal_closure(list(range(1, args.generators_number + 1)), args.generators_number, max_length = args.max_length)]
 
-clsunion = random_union(closures)
-dataset = list(take_unique(args.size, clsunion))
+clsunion = map(lambda x: choice(x), zip(*closures))
+dataset = list(islice(unique_everseen(clsunion, key = tuple), args.size))
 
 with open(f"datasets/clsunion_n={args.generators_number}_l={args.max_length}.pkl", "wb") as file:
     pickle.dump(dataset, file)

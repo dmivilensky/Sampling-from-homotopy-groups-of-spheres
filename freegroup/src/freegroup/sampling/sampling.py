@@ -1,15 +1,26 @@
-from typing import List, Tuple
+from typing import List, Tuple, Iterable
+
+import math
 
 from numpy import random
-from random import sample
-from .utils import (
-    random_length,
-    shuffle,
-    reduce,
-    subset,
-)
+from random import sample, randint
 import freegroup.tools as tools
 from itertools import repeat
+
+
+def random_length(radius, method="uniform"):
+    if not isinstance(method, str):
+        return method()
+    
+    if method == "uniform":
+        # https://arxiv.org/pdf/1805.08207.pdf 6.3 Uniform sampling in hyperbolic space
+        return max(1, int(round(math.acosh(1 + random.random() * (math.cosh(radius) - 1)))))
+    elif method == "almost_uniform":
+        return max(1, int(round(math.asinh(random.random() * math.cosh(radius - 1)))))
+    elif method == "uniform_radius":
+        return max(1, int(round(random.random() * radius)))
+    elif method == "constant":
+        return radius
 
 
 def free_group_bounded(generators_number=2, max_length=5, random_length_method = "uniform"):
@@ -25,7 +36,7 @@ def free_group_bounded(generators_number=2, max_length=5, random_length_method =
         yield word
 
 
-def normal_closure(generator: tools.Word, fg_dimension: int, method: str = 'conjugation', **params):
+def normal_closure(generator, fg_dimension: int, method: str = 'conjugation', **params):
     if method == 'conjugation':
         return normal_closure_conjugation(generator, fg_dimension, **params)
     
@@ -88,7 +99,7 @@ def random_bracket_sequence(n):
     return prefix + suffix
 
 
-def random_from_identities(depth: int, identites: List[Tuple[tools.Word, tools.Word]]):
+def random_from_identities(depth: int, identites: List[Tuple]):
     seq = random_bracket_sequence(depth)
 
     match, stack = [None] * len(seq), []
@@ -113,7 +124,7 @@ def random_from_identities(depth: int, identites: List[Tuple[tools.Word, tools.W
     return sum(sampled, [])
 
 
-def normal_closure_brackets(generator: tools.Word, free_group_dimension: int, max_depth: int):
+def normal_closure_brackets(generator, free_group_dimension: int, max_depth: int, random_depth_method: str = 'uniform'):
     identities = [([-x], [x]) for x in range(1, free_group_dimension + 1)]
     base, i_base = generator, tools.reciprocal(generator)
     for t in range(0, len(base)):
@@ -121,17 +132,22 @@ def normal_closure_brackets(generator: tools.Word, free_group_dimension: int, ma
         identities.append((i_base[:t], i_base[t:]))
 
     while True:
-        yield random_from_identities(random_length(max_depth), identities)
+        yield random_from_identities(random_length(max_depth, random_depth_method), identities)
 
 
-def symmetric_commutant(
-    generators: List[tools.Word],
-    fg_dimension: int,
-    n_multipliers: int,
-    closure_method: str = 'conjugation',
-    **closure_params,
-):
-    closures = [normal_closure(g, fg_dimension, closure_method, **closure_params) for g in generators]
-    g = reduce(tools.commutator, shuffle(zip(*closures)))
-    g = reduce(tools.multiply, subset(zip(*repeat(g, n_multipliers))))
-    yield from filter(lambda x: len(x) > 0, map(tools.normalize, g))
+def _random_commutator(words: Iterable):
+    words = list(words)
+    if len(words) == 0:
+        raise ValueError
+    if len(words) == 1:
+        return words[0]
+    if len(words) == 2:
+        return tuple(words)
+    if len(words) >= 2:
+        split_idx = randint(1, len(words) - 1)
+        return (_random_commutator(words[:split_idx]), _random_commutator(words[split_idx:]))
+
+
+def random_order_commutant(closures: List[Iterable]):
+    return map(_random_commutator, zip(*closures))
+

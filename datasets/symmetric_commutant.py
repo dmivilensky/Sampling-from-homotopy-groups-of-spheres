@@ -1,8 +1,8 @@
 import pickle
-from itertools import islice
 from argparse import ArgumentParser
-from freegroup.sampling import symmetric_commutant, take_unique
-from itertools import repeat
+from freegroup.sampling import normal_closure_conjugation as normal_closure, random_order_commutant
+from itertools import islice
+from iteration_utilities import unique_everseen
 
 parser = ArgumentParser(description='Generate dataset of elements from symmetric commutant')
 parser.add_argument('generators_number', type=int, help='number of generators (x, y, z, ...)')
@@ -15,13 +15,12 @@ args = parser.parse_args()
 generators = [[i] for i in range(1, args.generators_number + 1)] + \
     [list(range(1, args.generators_number + 1))]
 
-g = symmetric_commutant(generators,
-    args.generators_number,
-    args.max_number_multipliers,
-    max_length = args.part_max_length
-)
+closures = [normal_closure(g, generators_number=args.generators_number, max_length=args.part_max_length) for g in generators]
+
+g = random_order_commutant(closures)
+
 g = filter(lambda x: len(x) < args.max_length, g)
-dataset = list(take_unique(args.size, g))
+dataset = list(islice(unique_everseen(g, key = tuple), args.size))
 
 print('average length =', int(sum(map(len, dataset)) / len(dataset)))
 real_max_length = max(map(len, dataset))
