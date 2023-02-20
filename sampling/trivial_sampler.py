@@ -1,12 +1,12 @@
 import time
-from freegroup.tools import *
+from freegroup.tools import (is_from_singleton_normal_closure, to_string)
 from freegroup.sampling import (free_group_bounded, normal_closure_conjugation as normal_closure)
 
 
 class TrivialSampler:
     def __init__(self, generators_number=2, max_length=10, baseline="free", first=None):
-        singleton_generators = [[[x]] for x in range(1, generators_number+1)]
-        joint_generator = [[x for x in range(1, generators_number+1)]]
+        singleton_generators = [[x] for x in range(1, generators_number+1)]
+        joint_generator = [x for x in range(1, generators_number+1)]
 
         if baseline == "free":
             baseline_group = free_group_bounded(
@@ -54,5 +54,5 @@ if __name__ == "__main__":
     sampler = TrivialSampler(baseline="joint", generators_number=2, max_length=25)
     start = time.time()
     for i in range(1000):
-        print_word(next(sampler))
+        print(to_string(next(sampler), method='su'))
     print(time.time() - start, 's')

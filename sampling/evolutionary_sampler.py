@@ -2,41 +2,15 @@ import time
 import random
 import warnings
 
-from freegroup.tools import *
+from freegroup.tools import (
+    reduce_modulo_singleton_normal_closure, normalize, to_string, is_from_singleton_normal_closure
+)
 from freegroup.sampling import (free_group_bounded, normal_closure_conjugation as normal_closure)
 
 
-def distance_to_singleton_normal_closure(word, generators, approximation="reduction"):
-    if len(generators) != 1:
-        raise NotImplementedError('`generators` must contain only one generator ;)')
-
+def distance_to_singleton_normal_closure(word, closure, approximation="reduction"):
     if approximation == "reduction":
-        contained_smth_to_reduce = True
-        generator = generators[0]
-        generator_len = len(generator)
-
-        doubled_generator  = generator * 2
-        doubled_reciprocal = reciprocal(generator) * 2
-
-        while contained_smth_to_reduce:
-            contained_smth_to_reduce = False
-            new_word = []
-
-            i = 0
-            while i <= len(word) - generator_len:
-                subword = word[i:i + generator_len]
-                if occurs(subword, doubled_generator) or occurs(subword, doubled_reciprocal):
-                    contained_smth_to_reduce = True
-                    i += generator_len
-                else:
-                    new_word.append(word[i])
-                    i += 1
-            
-            if i < len(word):
-                new_word += word[-(len(word)-i):]
-            word = normalize(new_word)
-
-        return len(word)
+        return len(reduce_modulo_singleton_normal_closure(word, closure))
     else:
         raise NotImplementedError('unknown `approximation`')
 
@@ -116,7 +90,7 @@ def optimize(
 
             if verbose:
                 print(f'INFO: f value = {current_function}')
-                print_word(normalized)
+                print(to_string(normalized, method = 'su'))
 
             if current_function == 0:
                 break
@@ -198,5 +172,5 @@ if __name__ == "__main__":
     
     start = time.time()
     for i in range(1000):
-        print_word(next(sampler))
+        print(to_string(next(sampler), method='su'))
     print(time.time() - start, 's')

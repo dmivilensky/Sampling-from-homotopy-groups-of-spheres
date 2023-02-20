@@ -2,7 +2,9 @@ import time
 from autograd import numpy as np
 from autograd import grad
 from functools import partial
-from freegroup.tools import is_from_singleton_normal_closure, normalize, print_word
+from freegroup.tools import (
+    is_from_singleton_normal_closure, normalize, to_string
+)
 
 
 dot_product = np.array(
@@ -143,5 +145,5 @@ if __name__ == "__main__":
     sampler = MatrixSampler(generators_number=2, max_length=25)
     start = time.time()
     for i in range(1000):
-        print_word(next(sampler))
+        print(to_string(next(sampler), method='su'))
     print(time.time() - start, 's')
