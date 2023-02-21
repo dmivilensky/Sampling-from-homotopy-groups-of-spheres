@@ -303,11 +303,11 @@ def to_string(word, method = None, **kwargs):
         raise ValueError('You should specify either kwargs for `ToString` or `method`')
     if method is None:
         return ToString(**kwargs)(word)
-    if method in 'int':
+    if method in ['int', 'integer', 'tokenizer']:
         return to_integer_representation(word)
-    if method in 'lu':
+    if method in ['lu', 'lower_upper', 'lower-upper']:
         return to_lower_upper_representation(word)
-    if method in 'superscript':
+    if method in ['superscript', 'su']:
         return to_superscript_representation(word)
     raise ValueError('Unknown representation method')
 
