@@ -1,73 +1,88 @@
 from typing import List, Tuple, Iterable
 
 import math
-
+from iteration_utilities import repeatfunc
 from numpy import random
-from random import sample, randint
-import freegroup.tools as tools
-from itertools import repeat
 
+from freegroup.tools import (
+    reciprocal, normalize, conjugate
+)
+from functools import reduce
 
-def random_length(radius, method="uniform"):
+def uniform_hyperbolic(radius: float):
+    return max(1, int(round(math.acosh(1 + random.random() * (math.cosh(radius) - 1)))))
+
+def almost_uniform_hyperbolic(radius: float):
+    return max(1, int(round(math.asinh(random.random() * math.cosh(radius - 1)))))
+
+def uniform(radius: float):
+    return max(1, int(round(random.random() * radius)))
+
+def constant(radius: float):
+    return max(1, int(radius))
+
+def random_length(method = "uniform_hyperbolic", **kwargs):
     if not isinstance(method, str):
-        return method()
+        return method(**kwargs)
+    if method in ["uniform_hyperbolic", "uh"]:
+        return uniform_hyperbolic(**kwargs)
+    if method in ["almost_uniform_hyperbolic", "auh"]:
+        return almost_uniform_hyperbolic(**kwargs)
+    if method in ["uniform", "u"]:
+        return uniform(**kwargs)
+    if method in ["constant", "c"]:
+        return constant(**kwargs)
     
-    if method == "uniform":
-        # https://arxiv.org/pdf/1805.08207.pdf 6.3 Uniform sampling in hyperbolic space
-        return max(1, int(round(math.acosh(1 + random.random() * (math.cosh(radius) - 1)))))
-    elif method == "almost_uniform":
-        return max(1, int(round(math.asinh(random.random() * math.cosh(radius - 1)))))
-    elif method == "uniform_radius":
-        return max(1, int(round(random.random() * radius)))
-    elif method == "constant":
-        return radius
 
-
-def free_group_bounded(generators_number=2, max_length=5, random_length_method = "uniform"):
-    generators = set(range(1, generators_number + 1)) | set(range(-generators_number, 0))
-
-    while True:
-        length = random_length(max_length, method = random_length_method)
-        word = sample(generators, 1)
-        for _ in range(length-1):
-            factor = sample(generators - set([-word[-1]]), 1)[0]
-            word.append(factor)
-
-        yield word
-
-
-def normal_closure(generator, fg_dimension: int, method: str = 'conjugation', **params):
-    if method == 'conjugation':
-        return normal_closure_conjugation(generator, fg_dimension, **params)
     
-    if method == 'brackets':
-        return normal_closure_brackets(generator, fg_dimension, **params)
+def freegroup(freegroup_dimension, length_method, length_parameters):
+    def generators_index(generator):
+        if generator < 0:
+            return abs(generator) - 1
+        return freegroup_dimension + abs(generator) - 1
+    
+    p = 1 / (2 * freegroup_dimension - 1)
+    
+    dist = [p for _ in range(2 * freegroup_dimension)]
+    generators = [-x for x in range(1, freegroup_dimension + 1)] +\
+        [x for x in range(1, freegroup_dimension + 1)]
+    
+    result = [random.choice(generators)]
+    for _ in range(1, random_length(length_method, **length_parameters)):
+        last, _last = generators_index(result[-1]), generators_index(-result[-1])
+        dist[_last], dist[last] = 0, p
+        result.append(random.choice(generators, p = dist))
+        dist[_last] = p
+        
+    return result
 
-    raise ValueError('Unknown method')
-
-
-def normal_closure_conjugation(generator, generators_number=2, max_length=5):
+def freegroup_generator(*args, **kwargs):
+    return repeatfunc(freegroup, *args, **kwargs)
+        
+    
+def normal_closure_via_conjugation(
+    generator: List[int],
+    freegroup_dimension: int = 2,
+    length_method: str = 'uh',
+    length_parameters = {'radius': 5},
+    conjugator_length_method: str ='uh',
+    conjugator_length_parameters = {'radius': 5}
+):
+    length = random_length(length_method, **length_parameters)
+    result = []
     while True:
-        length = random_length(max_length)
-        word = []
+        factor = generator if random.random() > 0.5 else reciprocal(generator)
+        conjugator = freegroup(freegroup_dimension, conjugator_length_method, conjugator_length_parameters)
+        new_result = result + conjugation(factor, conjugator)
+        new_result = normalize(new_result)
+        if len(new_result) > length:
+            break
+        result = new_result
 
-        while True:
-            factor = generator if random.random() > 0.5 else tools.reciprocal(generator)
-
-            conjugator = next(free_group_bounded(
-                generators_number=generators_number, 
-                max_length=(length - len(word) - len(factor)) // 2
-            ))
-            new_word = word + tools.conjugation(factor, conjugator)
-            new_word = tools.normalize(new_word)
-            if len(new_word) > max_length:
-                break
-            word = new_word
-
-        yield word
+    return result
 
 
-def random_bracket_sequence(n):
+def __random_bracket_sequence(n):
     """Generates a balanced sequence of n +1s and n -1s corresponding to correctly nested brackets."""
     # "Generating binary trees at random", Atkinson & Sack, 1992
 
@@ -98,8 +113,7 @@ def random_bracket_sequence(n):
 
     return prefix + suffix
 
-
-def random_from_identities(depth: int, identites: List[Tuple]):
+def __random_from_identities(depth, random_identity):
     seq = random_bracket_sequence(depth)
 
     match, stack = [None] * len(seq), []
@@ -117,35 +131,62 @@ def random_from_identities(depth: int, identites: List[Tuple]):
     sampled = [None] * len(seq)
 
     for idx, match_idx in enumerate(match):
-        sampled[idx], sampled[match_idx] = identites[random.choice(len(identites))]
+        sampled[idx], sampled[match_idx] = random_identity()
         if random.random() > 0.5:
             sampled[idx], sampled[match_idx] = sampled[match_idx], sampled[idx]
+    return reduce(lambda x, y: x + y, sampled)
+
+def normal_closure_via_brackets(generator: List[int], freegroup_dimension: int, depth_method: str = 'uniform', depth_parameters = {'radius': 20}):
+    def random_identity():
+        n = len(generator)
+        idx = random.choice(freegroup_dimension + 2 * n)
+        if idx < freegroup_dimension:
+            return [idx + 1], [-(idx + 1)]
+        idx -= freegroup_dimension
+        if idx <= n:
+            return generator[:idx], generator[idx:]
+        idx -= n
+        _generator = reciprocal(generator)
+        return _generator[:idx], _generator[idx:]
     
-    return sum(sampled, [])
+    depth = random_length(depth_method, **depth_parameters)
+    return normalize(__random_from_identities(depth, random_identity))
+
+def normal_closure(method = 'conjugation', *args, **params):
+    if method in ['conjugation', 'conj']:
+        return normal_closure_via_conjugation(*args, **params)
+    if method in ['brackets', 'br']:
+        return normal_closure_via_brackets(*args, **params)
+    raise ValueError('Unknown method')
+    
+def normal_closure_generator(method = 'conjugation', *args, **params):
+    if method in ['conjugation', 'conj']:
+        return repeatfunc(normal_closure_via_conjugation, *args, **params)
+    if method in ['brackets', 'br']:
+        return repeatfunc(normal_closure_via_brackets, *args, **params)
+    raise ValuesError('Unknown method')
 
 
-def normal_closure_brackets(generator, free_group_dimension: int, max_depth: int, random_depth_method: str = 'uniform'):
-    identities = [([-x], [x]) for x in range(1, free_group_dimension + 1)]
-    base, i_base = generator, tools.reciprocal(generator)
-    for t in range(0, len(base)):
-        identities.append((base[:t], base[t:]))
-        identities.append((i_base[:t], i_base[t:]))
 
-    while True:
-        yield random_from_identities(random_length(max_depth, random_depth_method), identities)
-
-
-def random_order_commutant(closures: Iterable[Tuple]):
-    def _random_commutator(words):
-        if len(words) == 0:
-            raise ValueError
-        if len(words) == 1:
-            return words[0]
-        if len(words) == 2:
-            return tuple(words)
-        if len(words) >= 2:
-            split_idx = randint(1, len(words) - 1)
-        return (_random_commutator(words[:split_idx]), _random_commutator(words[split_idx:]))
-
-    return map(lambda x: _random_commutator(list(x)), closures)
-
+def random_tree(
+    words: List[List[int]],
+    **params,
+):
+    def p_mult(): return params.get('p_mult', 0.)
+    def p_comm(): return params.get('p_comm', 1.)
+    
+    if len(words) == 0: return []
+    if len(words) == 1: return words[0]
+    
+    coin = random.random()
+    if coin <= p_mult():
+        return words
+    coin -= p_mult()
+    
+    if coin <= p_comm():
+        idx = random.randint(1, len(words))
+        return (random_tree(words[:idx], **params), random_tree(words[idx:], **params))
+    coin -= p_comm()
+    
+    assert p_mult() + p_comm() == 1.
+    
