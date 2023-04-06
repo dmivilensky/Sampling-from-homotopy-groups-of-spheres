@@ -44,42 +44,13 @@ All methods have `batch_` version that accepts list of `word`s
 - method `from_string(string, method = Either 'lu', 'integer', 'superscript')`. Converts the given string to a **word** using the given `method`
 
 # `freegroup.sampling`
+All samplers have `_generator` version for infinite iterable
 This module helps to build **word** samplers for generating datasets
-- `random_length(radius, method = Either 'uniform', 'uniform_radius', 'constant', custom_function)`. Returns a number from the given distribution. One can pass custom distribuiton in `method` parameter.
-- `freegroup_bounded(freegroup_dimension, max_length, random_length_method)`. Infinite generator of non-reducible words from free group on `freegroup_dimension` **generator**s
-- `normal_closure(closure, freegroup_dimension, method = Either 'conjugation' or 'brackets', params = Either max_length or max_depth, random_depth_method)`. Infinite generator of words from the normal closure `<closure>`
+- `random_length(method = Either ['uniform', 'uniform_radius', 'constant'] or custom_function, **params)`. Returns a number from the given distribution. One can pass custom distribuiton in `method` parameter.
+- `freegroup(freegroup_dimension, length_method, length_parameters)`. Infinite generator of non-reducible words from free group on `freegroup_dimension` **generator**s
+- `normal_closure(method = ['conjugation', 'brackets'], closure, freegroup_dimension, **params)`. Random word from the normal closure `<closure>`
   ```py
   from freegroup.sampling import normal_closure
-  generator = normal_closure([1], 4, method = 'brackets', max_depth = 10, max_depth_method = 'uniform_radius')  
+  generator = normal_closure('brackets', [1], 4, depth_method = 'uniform', depth_parameters = {'radius': 10})  
   ```
   `generator` will produce **word**s from `<x>` with uniform length from 2 to 20
- - `random_order_commutant(words)`. Accepts `list` of Infinite Generatots. Returns Infinite Generator of random order commutators.
-  ```py
-  from freegroup.sampling import freegroup_bounded, random_order_commutant
-  iterables = [it1, it2, it3, it4,]
-  iterable = random_order_commutant(zip(*iterables))
-  ```
-  `iterable` will produce expressions like `[[next(it1), next(it2)], [next(it1), next(it2)]]` or `[[[next(it1), next(it2)], next(it3)], next(it4)]`, ...
-  
-  ## Example dataset
-  ```py
-  from freegroup.sampling import freegroup_bounded, random_order_commutant
-  from iteration_utilities import unique_everseen
-  from itertools import islice
-  from tqdm import tqdm
-  from random import randint, sample
-  
-  def iterable():
-    commutee = freegroup_bounded(4, radius = 10, method = 'uniform_radius')
-
-    def leaves():
-      while True: yield [next(commuteee) for _ in range(randint(2, 5))]
-
-    iterable = leaves()
-    # iterable = map(lambda x: sample(x, len(x)), iterable), if you want random permutation of `leaves`
-    iterable = random_order_commutant(iterable)
-    return unique_everseen(iterable, key = tuple)
-  
-  size = int(10 ** 2)
-  dataset = tqdm(islice(iterable(), size), total = size) # You can omit tqdm, if you don't want output anything
-  ```
