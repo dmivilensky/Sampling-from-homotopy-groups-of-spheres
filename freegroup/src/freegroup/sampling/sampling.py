@@ -4,8 +4,8 @@ import math
 from iteration_utilities import repeatfunc
 from numpy import random
 
-from freegroup.tools import (
-    reciprocal, normalize, conjugate
+from ..tools import (
+    reciprocal, normalize, conjugate, Comm, Mult
 )
 from functools import reduce
 
@@ -21,17 +21,17 @@ def uniform(radius: float):
 def constant(radius: float):
     return max(1, int(radius))
 
-def random_length(method = "uniform_hyperbolic", **kwargs):
+def random_length(method = "uniform_hyperbolic", *args, **kwargs):
     if not isinstance(method, str):
-        return method(**kwargs)
+        return method(*args, **kwargs)
     if method in ["uniform_hyperbolic", "uh"]:
-        return uniform_hyperbolic(**kwargs)
+        return uniform_hyperbolic(*args, **kwargs)
     if method in ["almost_uniform_hyperbolic", "auh"]:
-        return almost_uniform_hyperbolic(**kwargs)
+        return almost_uniform_hyperbolic(*args, **kwargs)
     if method in ["uniform", "u"]:
-        return uniform(**kwargs)
+        return uniform(*args, **kwargs)
     if method in ["constant", "c"]:
-        return constant(**kwargs)
+        return constant(*args, **kwargs)
     
 
     
@@ -57,11 +57,11 @@ def freegroup(freegroup_dimension, length_method, length_parameters):
     return result
 
 def freegroup_generator(*args, **kwargs):
-    return repeatfunc(freegroup, *args, **kwargs)
+    return repeatfunc(lambda: freegroup(*args, **kwargs))
         
     
 def normal_closure_via_conjugation(
-    generator: List[int],
+    closure: List[int],
     freegroup_dimension: int = 2,
     length_method: str = 'uh',
     length_parameters = {'radius': 5},
@@ -71,7 +71,7 @@ def normal_closure_via_conjugation(
     length = random_length(length_method, **length_parameters)
     result = []
     while True:
-        factor = generator if random.random() > 0.5 else reciprocal(generator)
+        factor = closure if random.random() > 0.5 else reciprocal(closure)
         conjugator = freegroup(freegroup_dimension, conjugator_length_method, conjugator_length_parameters)
         new_result = result + conjugation(factor, conjugator)
         new_result = normalize(new_result)
@@ -114,7 +114,7 @@ def __random_bracket_sequence(n):
     return prefix + suffix
 
 def __random_from_identities(depth, random_identity):
-    seq = random_bracket_sequence(depth)
+    seq = __random_bracket_sequence(depth)
 
     match, stack = [None] * len(seq), []
 
@@ -136,18 +136,18 @@ def __random_from_identities(depth, random_identity):
             sampled[idx], sampled[match_idx] = sampled[match_idx], sampled[idx]
     return reduce(lambda x, y: x + y, sampled)
 
-def normal_closure_via_brackets(generator: List[int], freegroup_dimension: int, depth_method: str = 'uniform', depth_parameters = {'radius': 20}):
+def normal_closure_via_brackets(closure: List[int], freegroup_dimension: int, depth_method: str = 'uniform', depth_parameters = {'radius': 20}):
     def random_identity():
-        n = len(generator)
+        n = len(closure)
         idx = random.choice(freegroup_dimension + 2 * n)
         if idx < freegroup_dimension:
             return [idx + 1], [-(idx + 1)]
         idx -= freegroup_dimension
         if idx <= n:
-            return generator[:idx], generator[idx:]
+            return closure[:idx], closure[idx:]
         idx -= n
-        _generator = reciprocal(generator)
-        return _generator[:idx], _generator[idx:]
+        _closure = reciprocal(closure)
+        return _closure[:idx], _closure[idx:]
     
     depth = random_length(depth_method, **depth_parameters)
     return normalize(__random_from_identities(depth, random_identity))
@@ -161,9 +161,9 @@ def normal_closure(method = 'conjugation', *args, **params):
     
 def normal_closure_generator(method = 'conjugation', *args, **params):
     if method in ['conjugation', 'conj']:
-        return repeatfunc(normal_closure_via_conjugation, *args, **params)
+        return repeatfunc(lambda: normal_closure_via_conjugation(*args, **params))
     if method in ['brackets', 'br']:
-        return repeatfunc(normal_closure_via_brackets, *args, **params)
+        return repeatfunc(lambda: normal_closure_via_brackets(*args, **params))
     raise ValuesError('Unknown method')
 
 
@@ -180,13 +180,12 @@ def random_tree(
     
     coin = random.random()
     if coin <= p_mult():
-        return words
+        return Mult(words)
     coin -= p_mult()
     
     if coin <= p_comm():
         idx = random.randint(1, len(words))
-        return (random_tree(words[:idx], **params), random_tree(words[idx:], **params))
+        return Comm([random_tree(words[:idx], **params), random_tree(words[idx:], **params)])
     coin -= p_comm()
     
     assert p_mult() + p_comm() == 1.
-    

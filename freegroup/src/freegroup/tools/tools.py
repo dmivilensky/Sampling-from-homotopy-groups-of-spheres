@@ -1,54 +1,56 @@
-from typing import Callable
+from typing import Callable, List
 from dataclasses import dataclass
+from functools import reduce
+
+class Expr:
+    pass
+
+@dataclass
+class Comm(Expr):
+    children: List[Expr]
+        
+@dataclass
+class Mult(Expr):
+    children: List[Expr]
 
 class Visitor:
     def __call__(self, word):
-        if isinstance(word, int):
-            return self.visit_generator(word)  
-        if isinstance(word, list):
-            return self.visit_multiplication(word)
-        if isinstance(word, tuple):
-            return self.visit_commutator(word)
+        if isinstance(word, list): return self.visit_word(word)
+        if isinstance(word, Comm): return self.visit_comm(word.children)
+        if isinstance(word, Mult): return self.visit_mult(word.children)
 
     def batch_visit(self, words):
         return [self(x) for x in words]
     
-    def visit_generator(self, generator): pass
+    def visit_word(self, generator): pass
 
-    def visit_commutator(self, commutator): pass
+    def visit_comm(self, commutator): pass
 
-    def visit_multiplication(self, multiplication): pass
+    def visit_mult(self, multiplication): pass
 
 
 class Invert(Visitor):
-    def visit_generator(self, generator):
-        return -generator
+    def visit_word(self, word):
+        return [-f for f in word[::-1]]
 
-    def visit_commutator(self, commutator):
-        return tuple(x for x in reversed(commutator))
+    def visit_comm(self, children):
+        return Comm([x for x in reversed(children)])
 
-    def visit_multiplication(self, multiplication):
-        return [self(x) for x in multiplication[::-1]]
+    def visit_mult(self, children):
+        return Mult([self(x) for x in children[::-1]])
 
 reciprocal = Invert()
 batch_invert = reciprocal.batch_visit
 
 
 class Flatten(Visitor):
-    def visit_generator(self, generator): return [generator]
+    def visit_word(self, word): return word
 
-    def visit_commutator(self, commutator):
-        commutator = tuple(self(x) for x in commutator)
-        result = commutator[0]
-        for idx in range(1, len(commutator)):
-            result = reciprocal(result) + reciprocal(commutator[idx]) + result + commutator[idx]
-        return result
+    def visit_comm(self, children):
+        return reduce(lambda x, y: reciprocal(x) + reciprocal(y) + x + y, map(self, children))
 
-    def visit_multiplication(self, multiplication):
-        result = []
-        for x in multiplication: 
-            result.extend(self(x))
-        return result
+    def visit_mult(self, children):
+        return reduce(lambda x, y: x + y, map(self, children))
 
 flatten = Flatten()
 batch_flatten = flatten.batch_visit
@@ -57,17 +59,17 @@ class Conjugate(Visitor):
     def __init__(self, conjugator):
         self.conjugator = conjugator
 
-    def visit_generator(self, generator):
-        return [reciprocal(self.conjugator)] + [generator] + [self.conjugator]
+    def visit_word(self, word):
+        return reciprocal(self.conjugator) + word + self.conjugator
 
-    def visit_commutator(self, commutator):
-        return tuple(self(x) for x in commutator)
+    def visit_comm(self, children):
+        return Comm([self(x) for x in childnre])
 
-    def visit_multiplication(self, multiplication):
-        if len(multiplication) == 1 and isinstance(multiplication[0], tuple):
-            return [self.visit_commutator(multiplication[0])]
+    def visit_mult(self, children):
+        if len(children) == 1 and isinsatnce(children[0], Comm):
+            return Mult([self(children[0])])
         else:
-            return [reciprocal(self.conjugator)] + multiplication + [self.conjugator]
+            return Mult([reciprocal(self.conjugator)] + children + [self.conjugator])
 
 def conjugate(word, conjugator):
     return Conjugate(conjugator)(word)
@@ -77,38 +79,73 @@ def batch_conjugate(words, conjugator):
 
 
 class Clone(Visitor):
-    def visit_generator(self, generator): return generator
+    def visit_word(self, word): return word[::]
 
-    def visit_commutator(self, commutator): tuple(self(x) for x in commutator)
+    def visit_comm(self, children): Comm([self(x) for x in children])
 
-    def visit_multiplication(self, multiplication): return [self(x) for x in multiplication]
+    def visit_mult(self, children): return Mult([self(x) for x in multiplication])
 
 clone = Clone()
 batch_clone = clone.batch_visit
 
 
 class Normalize(Visitor):
-    def visit_generator(self, generator): return generator
-
-    def visit_commutator(self, commutator): return tuple(self(x) for x in commutator)
-
-    def visit_multiplication(self, mutliplication):
-        children = []
-
-        def handle(x):
-            if isinstance(x, list):
-                for y in x: handle(y)
-            elif children and isinstance(x, int) and isinstance(children[-1], int) and children[-1] == -x:
-                del children[-1:]
-            else:
-                children.append(x)
     
-        for x in map(self, mutliplication): handle(x)
+    
+    @staticmethod
+    def _trim_commutees(left, right):
 
-        if len(children) == 1 and not isinstance(children[0], int):
-            return children[0]
+        '''
+        [xy, x] = [y, x]
+        [xy, X] = [y, X]
+        [xy, Y] = [y, x]
+        [x, xy] = [x, y]
+        [X, xy] = [X, y]
+        [Y, xy] = [x, y]
+        '''
+
+        min_length = min(len(left), len(right))
+
+        if min_length == 0:
+            return left, right
+
+        is_right_min = len(right) == min_length
+        if not is_right_min:
+            left, right = right, left
+
+        if left[:min_length] == right:
+            left, right = Normalize._trim_commutees(left[min_length:], right)
+        if left[:min_length] == reciprocal(right):
+            left, right = Normalize._trim_commutees(left[min_length:], right)
+        if left[-min_length:] == reciprocal(right):
+            left, right = Normalize._trim_commutees(left[-min_length:], left[:-min_length])
+
+        if not is_right_min:
+            return right, left
+        return left, right
+    
+    def visit_word(self, word): return reduce_modulo_singleton_normal_closure(word)
+
+    def visit_comm(self, children):
+        children = list(map(self, children))
+        if isinstance(children[0], list) and isinstance(children[1], list):
+            children[0], children[1] = Normalize._trim_commutees(children[0], children[1])
+        if any(map(lambda x: isinstance(x, list) and len(x) == 0, children)): return []
+        return Comm(children)
+
+    def visit_mult(self, children):
+        result = []
         
-        return children
+        for x in map(self, children):
+            if isinstance(x, list) and result and isinstance(result[-1], list):
+                result[-1] = reduce_modulo_singleton_normal_closure(result[-1] + x)
+            else:
+                result.append(x)
+                
+        if len(result) == 1:
+            return result[0]
+        
+        return Mult(result)
 
 normalize = Normalize()
 batch_normalize = normalize.batch_visit
@@ -140,20 +177,22 @@ def batch_is_trivial(words, closure = None):
     return [is_trivial(x, closure) for x in words]
 
 
+def _reduce_modulo_singleton_normal_closure_step(reduced, token, closure = None):
+    reduced.append(token)
+
+    if len(reduced) >= 2 and reduced[-2] == -reduced[-1]:
+        del reduced[-2:]
+    
+    if not closure is None and len(reduced) >= len(closure):
+        if is_trivial(reduced[-len(closure):], closure):
+            del reduced[-len(closure):]
+
 def reduce_modulo_singleton_normal_closure(word, closure = None):
     word = flatten(word)
-    closure_len = len(closure)
 
     reduced = []
-    for factor in word:
-        reduced.append(factor)
-
-        if len(reduced) >= 2 and reduced[-2] == -reduced[-1]:
-            del reduced[-2:]
-
-        if len(reduced) >= closure_len:
-            if is_trivial(word[-closure_len:], closure):
-                del reduced[-closure_len:]
+    for token in word:
+        _reduce_modulo_singleton_normal_closure_step(reduced, token, closure)
             
     return reduced
 
@@ -180,16 +219,14 @@ class ToString(Visitor):
     sep_multiplication_token: str                       = ' '
     end_multiplication_token: str                       = ''
 
-    def visit_generator(self, generator):
-        return self.generator_representation_fn(generator)
+    def visit_word(self, word):
+        return self.sep_multiplication_token.join(map(self.generator_representation_fn, word))
 
-    def visit_commutator(self, commutator):
-        children = (self(x) for x in commutator)
-        return f'{self.begin_commutator_token}{self.sep_commutator_token.join(children)}{self.end_commutator_token}'
+    def visit_comm(self, children):
+        return f'{self.begin_commutator_token}{self.sep_commutator_token.join(map(self, children))}{self.end_commutator_token}'
 
-    def visit_multiplication(self, mult):
-        children = [self(x) for x in mult]
-        return f'{self.begin_multiplication_token}{self.sep_multiplication_token.join(children)}{self.end_multiplication_token}'
+    def visit_mult(self, children):
+        return f'{self.begin_multiplication_token}{self.sep_multiplication_token.join(map(self, children))}{self.end_multiplication_token}'
 
 
 import parsec
@@ -215,10 +252,9 @@ class FromString():
         
         @parsec.generate
         def generator():
-            raw_generator = yield parsec.regex(self.generator_representation_regex)
-            return self.generator_representation_map(raw_generator)
+            raw_generators = yield parsec.many1(within_spaces(parsec.regex(self.generator_representation_regex)))
+            return list(map(self.generator_representation_map, raw_generators))
             
-
         @parsec.generate
         def commutator():
             if not self.begin_commutator_token is None:
@@ -229,7 +265,7 @@ class FromString():
             if not self.end_commutator_token is None:
                 _ = yield token(self.end_commutator_token)
             
-            return tuple(children)
+            return Comm(children)
 
         @parsec.generate
         def multiplication():
@@ -241,8 +277,9 @@ class FromString():
             if not self.end_multiplication_token is None:
                 _ = yield token(self.end_multiplication_token)
 
-            return multipliers
+            return Mult(multipliers)
         
+        self.test = generator.parse_strict
         self.parse = multiplication.parse_strict
     
     def __call__(self, string: str):
@@ -298,11 +335,11 @@ from_superscript_representation = FromString(
     generator_representation_map    = _from_superscript_representation,
 )
 
-def to_string(word, method = None, **kwargs):
-    if len(kwargs) == 0 and method is None:
-        raise ValueError('You should specify either kwargs for `ToString` or `method`')
-    if method is None:
-        return ToString(**kwargs)(word)
+def to_string(word, method = 'tokenizer'):
+    if not isinstance(method, str) and not isinstance(method, dict):
+        raise ValueError('You should specify either arguemnts for `ToString` or `string` as `method`')
+    if not isinstance(method, str):
+        return ToString(**method)(word)
     if method in ['int', 'integer', 'tokenizer']:
         return to_integer_representation(word)
     if method in ['lu', 'lower_upper', 'lower-upper']:
@@ -311,10 +348,10 @@ def to_string(word, method = None, **kwargs):
         return to_superscript_representation(word)
     raise ValueError('Unknown representation method')
 
-def from_string(word, method = None, **kwargs):
-    if len(kwargs) == 0 and method is None:
-        raise ValueError('You should specify either kwargs for `FromString` or `method`')
-    if method is None:
+def from_string(word, method = 'tokenizer'):
+    if not isinstance(method, str) and not isinstance(method, dict):
+        raise ValueError('You should specify either arguemnts for `FromString` or `string` as `method`')
+    if not isinstance(method, str):
         return FromString(**kwargs)(word)
     if method in ['int', 'integer', 'tokenizer']:
         return from_integer_representation(word)
@@ -323,3 +360,13 @@ def from_string(word, method = None, **kwargs):
     if method in ['superscript', 'su']:
         return from_superscript_representation(word)
     raise ValueError('Unknown representation method')
+    
+def batch_to_string(words, **kwargs):
+    return list(map(lambda x: to_string(x, **kwargs), words))
+
+def batch_from_string(words, **kwargs):
+    return list(map(lambda x: from_string(x, **kwargs), words))
+
+def wu_closure(freegroup_dimension, index):
+    if index == 0: return list(range(1, freegroup_dimension + 1))
+    return [index]
