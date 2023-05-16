@@ -73,7 +73,7 @@ def normal_closure_via_conjugation(
     while True:
         factor = closure if random.random() > 0.5 else reciprocal(closure)
         conjugator = freegroup(freegroup_dimension, conjugator_length_method, conjugator_length_parameters)
-        new_result = result + conjugation(factor, conjugator)
+        new_result = result + conjugate(factor, conjugator)
         new_result = normalize(new_result)
         if len(new_result) > length:
             break
